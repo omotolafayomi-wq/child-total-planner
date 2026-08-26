@@ -33,7 +33,7 @@ function SignUpForm() {
       if (result.session) {
         setSuccess(true);
         setTimeout(() => {
-          router.push("/dashboard/children");
+          router.push("/onboarding/welcome");
           router.refresh();
         }, 800);
       }

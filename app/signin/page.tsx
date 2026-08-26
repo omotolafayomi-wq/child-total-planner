@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn, getCurrentUser } from "@/lib/auth";
+import { getOnboardingState as getStoreOnboardingState } from "@/lib/store";
 
 function SignInForm() {
   const [email, setEmail] = useState("");
@@ -27,7 +28,12 @@ function SignInForm() {
     setLoading(true);
     try {
       await signIn(email, password);
-      router.push(redirectTo);
+      const onboarding = getStoreOnboardingState();
+      if (onboarding && onboarding.step !== "complete") {
+        router.push(`/onboarding/${onboarding.step}`);
+      } else {
+        router.push(redirectTo);
+      }
       router.refresh();
     } catch (err) {
       setError((err as Error)?.message || "Failed to sign in.");

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getCurrentUser, requireAuth } from "@/lib/auth";
 import { getChildren, getAssessments, createAssessment, PILLARS, DEVELOPMENT_LEVELS } from "@/lib/store";
+import BackButton from "@/components/BackButton";
 
 const PRIMARY_PILLARS = PILLARS.slice(0, 5);
 const SUPPORTING_AREAS = PILLARS.slice(5);
@@ -105,6 +106,7 @@ export default function AssessPage() {
         </div>
       ) : (
         <>
+          <BackButton />
           <div className="flex items-center gap-3">
             <label className="label mb-0">Child:</label>
             <select value={selectedChildId} onChange={(e) => handleChildChange(e.target.value)} className="input w-auto">
@@ -158,6 +160,10 @@ export default function AssessPage() {
             <div className="flex items-center gap-3">
               <button type="submit" className="btn-primary">Save Assessment</button>
               {saved && <span className="text-sm text-growth">Assessment saved successfully!</span>}
+            </div>
+            <div className="mt-6 pt-6 border-t border-border">
+              <p className="text-sm text-muted-foreground mb-3">Next step: Turn your assessment into focused goals.</p>
+              <Link href="/dashboard/goals" className="btn-outline">Set Goals</Link>
             </div>
           </form>
         </>

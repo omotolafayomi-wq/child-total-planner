@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { getChildren, getEvidence, createEvidence, deleteEvidence, getGoals, PILLARS } from "@/lib/store";
+import BackButton from "@/components/BackButton";
 
 const EVIDENCE_TYPES = [
   { value: "text", label: "Text" },
@@ -94,6 +96,7 @@ export default function EvidencePage() {
 
   return (
     <div className="space-y-6">
+      <BackButton />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Evidence & Tracker</h1>
@@ -221,6 +224,13 @@ export default function EvidencePage() {
           )}
         </>
       )}
+      <div className="card">
+        <p className="text-sm text-muted-foreground mb-3">Next step: Reflect on what the child learned.</p>
+        <div className="flex gap-2">
+          <Link href="/dashboard/reflections/child-voice" className="btn-outline">Child Reflection</Link>
+          <Link href="/dashboard/reflections/parent-review" className="btn-primary">Parent Review</Link>
+        </div>
+      </div>
     </div>
   );
 }

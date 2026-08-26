@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { getChildren, getGoals, createGoal, updateGoal, deleteGoal, PILLARS, DEVELOPMENT_LEVELS, GOAL_STATUSES } from "@/lib/store";
+import BackButton from "@/components/BackButton";
 
 const CHILD_VOICE_QUESTIONS = [
   "What are you proud of this month?",
@@ -155,6 +156,7 @@ export default function GoalsPage() {
 
   return (
     <div className="space-y-6">
+      <BackButton />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Goals</h1>
@@ -326,6 +328,10 @@ export default function GoalsPage() {
           </div>
         </>
       )}
+      <div className="card">
+        <p className="text-sm text-muted-foreground mb-3">Next step: Organise activities into a plan.</p>
+        <Link href="/dashboard/plan/weekly" className="btn-primary">Build Plan</Link>
+      </div>
     </div>
   );
 }

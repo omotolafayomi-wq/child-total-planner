@@ -59,6 +59,76 @@ export default function DashboardPage() {
     return { ...p, level: assessment?.level || "BEGINNING", levelIndex };
   });
 
+  function renderNextStepCard() {
+    if (!selectedChild) return null;
+    if (assessments.length === 0) {
+      return (
+        <div className="card border-l-4 border-l-primary">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="font-semibold">Next step: Complete your child&apos;s development assessment</h3>
+              <p className="text-sm text-muted-foreground mt-1">Understand current capabilities across all development domains.</p>
+            </div>
+            <Link href="/dashboard/assess" className="btn-primary whitespace-nowrap">Complete Assessment</Link>
+          </div>
+        </div>
+      );
+    }
+    if (activeGoals.length === 0) {
+      return (
+        <div className="card border-l-4 border-l-growth-600">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="font-semibold">Next step: Choose three priority goals</h3>
+              <p className="text-sm text-muted-foreground mt-1">Turn your assessment into focused, achievable goals.</p>
+            </div>
+            <Link href="/dashboard/goals" className="btn-primary whitespace-nowrap">Set Goals</Link>
+          </div>
+        </div>
+      );
+    }
+    if (plans.length === 0) {
+      return (
+        <div className="card border-l-4 border-l-gold-500">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="font-semibold">Next step: Build your first plan</h3>
+              <p className="text-sm text-muted-foreground mt-1">Organise activities into a weekly or monthly timetable.</p>
+            </div>
+            <Link href="/dashboard/plan/weekly" className="btn-primary whitespace-nowrap">Build Plan</Link>
+          </div>
+        </div>
+      );
+    }
+    if (evidence.length === 0) {
+      return (
+        <div className="card border-l-4 border-l-purple-500">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="font-semibold">Next step: Add evidence of growth</h3>
+              <p className="text-sm text-muted-foreground mt-1">Document what your child has accomplished.</p>
+            </div>
+            <Link href="/dashboard/evidence" className="btn-primary whitespace-nowrap">Add Evidence</Link>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="card border-l-4 border-l-emerald-500">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h3 className="font-semibold">Keep the momentum going</h3>
+            <p className="text-sm text-muted-foreground mt-1">Review progress, add new evidence or explore activities.</p>
+          </div>
+          <div className="flex gap-2">
+            <Link href="/dashboard/activities" className="btn-outline whitespace-nowrap">Explore Activities</Link>
+            <Link href="/dashboard/reflections/parent-review" className="btn-primary whitespace-nowrap">Weekly Review</Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) return null;
 
   return (
@@ -101,6 +171,7 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div className="space-y-6">
+          {renderNextStepCard()}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {pillarAssessments.map((pillar) => (
               <div key={pillar.value} className="pillar-card">

@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { getChildren, getPlans, createPlan, ACTIVITY_LIBRARY, PILLARS, SAFETY_LEVELS } from "@/lib/store";
+import { getChildren, getPlans, createPlan, updatePlan, ACTIVITY_LIBRARY, PILLARS, SAFETY_LEVELS } from "@/lib/store";
+import BackButton from "@/components/BackButton";
 
 export default function ActivitiesPage() {
   const [user, setUser] = useState<any>(null);
@@ -82,6 +84,7 @@ export default function ActivitiesPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
+          <BackButton />
           <h1 className="text-2xl font-bold">Activities</h1>
           <p className="text-muted-foreground">Discover development activities aligned to LEARN, LIVE, LEAD, EARN, SERVE and more</p>
         </div>
@@ -203,6 +206,10 @@ export default function ActivitiesPage() {
             )}
           </div>
         ))}
+      </div>
+      <div className="card">
+        <p className="text-sm text-muted-foreground mb-3">Next step: Add selected activities to a plan.</p>
+        <Link href="/dashboard/plan/weekly" className="btn-primary">Build Plan</Link>
       </div>
     </div>
   );

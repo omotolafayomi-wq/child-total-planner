@@ -174,6 +174,7 @@ const STORE_KEYS = {
   reports: "tcd_reports",
   achievements: "tcd_achievements",
   verificationTokens: "tcd_verification_tokens",
+  onboarding: "tcd_onboarding",
 };
 
 function read<T>(key: string, fallback: T): T {
@@ -542,4 +543,49 @@ export function getLevelLabel(level: DevelopmentLevel): string {
 export function getStatusLabel(status: GoalStatus): string {
   const found = GOAL_STATUSES.find((s) => s.value === status);
   return found?.label || status;
+}
+
+export interface OnboardingState {
+  step: "welcome" | "child" | "profile" | "plan" | "complete";
+  parentId: string;
+  childId?: string;
+  childData?: Partial<Child>;
+  profileData?: {
+    strengths: string[];
+    areasToDevelop: string[];
+    interests: string[];
+    responsibilities: string[];
+    existingSkills: string[];
+    parentPriorities: string[];
+  };
+  planData?: {
+    type: "weekly" | "monthly";
+    startDate?: string;
+    endDate?: string;
+  };
+  startedAt: string;
+  updatedAt: string;
+}
+
+export function getOnboardingState(parentId?: string): OnboardingState | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(STORE_KEYS.onboarding);
+    if (!raw) return null;
+    const state = JSON.parse(raw) as OnboardingState;
+    if (parentId && state.parentId !== parentId) return null;
+    return state;
+  } catch {
+    return null;
+  }
+}
+
+export function saveOnboardingState(state: OnboardingState) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(STORE_KEYS.onboarding, JSON.stringify(state));
+}
+
+export function clearOnboardingState() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(STORE_KEYS.onboarding);
 }

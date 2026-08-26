@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { getChildren, getPlans, createPlan, updatePlan, ACTIVITY_LIBRARY, PILLARS } from "@/lib/store";
+import BackButton from "@/components/BackButton";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -126,6 +127,7 @@ export default function WeeklyPlanPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
+          <BackButton />
           <h1 className="text-2xl font-bold">Weekly Plan</h1>
           <p className="text-muted-foreground">Plan activities for each day of the week</p>
         </div>

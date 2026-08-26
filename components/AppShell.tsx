@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { getSession, signOut } from "@/lib/auth";
-import { getChildren } from "@/lib/store";
+import { getChildren, getOnboardingState } from "@/lib/store";
 
 const navItems = [
   { href: "/", label: "Home", ariaLabel: "Home", icon: HomeIcon },
@@ -163,9 +163,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const isAuthPage = pathname === "/signin" || pathname === "/signup" || pathname === "/forgot-password";
     const isLanding = pathname === "/";
     const isLegalPage = pathname === "/about" || pathname === "/contact" || pathname === "/terms" || pathname === "/privacy";
-    if (isAuthPage || isLanding || isLegalPage) return;
+    const isOnboarding = pathname.startsWith("/onboarding");
+    if (isAuthPage || isLanding || isLegalPage || isOnboarding) return;
     if (!session) {
       router.push("/signin");
+      return;
+    }
+    const onboarding = getOnboardingState();
+    if (onboarding && onboarding.parentId === session.parentId && onboarding.step !== "complete") {
+      router.push(`/onboarding/${onboarding.step}`);
     }
   }, [authChecked, session, pathname, router]);
 
@@ -182,8 +188,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isAuthPage = pathname === "/signin" || pathname === "/signup" || pathname === "/forgot-password";
   const isLanding = pathname === "/";
   const isLegalPage = pathname === "/about" || pathname === "/contact" || pathname === "/terms" || pathname === "/privacy";
+  const isOnboarding = pathname.startsWith("/onboarding");
 
-  if (isAuthPage || isLanding || isLegalPage) {
+  if (isAuthPage || isLanding || isLegalPage || isOnboarding) {
     return <>{children}</>;
   }
 
