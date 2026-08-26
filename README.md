@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Total Child Development Planner
+
+A professional, responsive, mobile-first family-development platform for Nigerian and African families. Built around **LEARN • LIVE • LEAD • EARN • SERVE**.
 
 ## Getting Started
 
-First, run the development server:
+### 1. Install dependencies
+
+```bash
+npm install
+```
+
+### 2. Configure environment
+
+```bash
+cp .env.example .env.local
+```
+
+Generate a secure secret:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+```
+
+Update `.env.local` with the generated secret and your local URL.
+
+### 3. Start the development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to start using the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+app/                    # Next.js App Router pages
+  signin/              # Sign in
+  signup/              # Sign up with email verification
+  verify-email/        # Email verification page
+  dashboard/           # Protected dashboard routes
+    children/          # Child profile management
+    assess/            # Development assessment
+    goals/             # Goal setting and tracking
+    activities/        # Activity discovery
+    plan/              # Weekly and monthly planning
+    evidence/          # Evidence of growth
+    reflections/       # Child voice and parent review
+    reports/           # Development reports
+    portfolio/         # Child portfolio
+    achievements/      # Developmental achievements
+    profile/           # Parent profile
+    modules/           # Specialist modules
+components/            # Reusable React components
+lib/                   # Data layer, auth, utilities
+```
+
+## Scripts
+
+```bash
+npm run dev        # Start development server
+npm run build      # Production build
+npm run start      # Start production server
+npm run lint       # Run ESLint
+```
+
+## Design System
+
+- **Primary**: Deep blue (`#123C63` → `#1E6FA8`)
+- **Accent**: Warm gold (`#F4B942`)
+- **Growth**: Green (`#3FA36B`)
+- **Background**: Soft blue-grey (`#F7F9FC`)
+
+## Philosophy
+
+> Raise a child who can learn, live, lead, earn, serve, create, adapt and keep learning — not merely a child who can pass the next examination.
 
 ## Learn More
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Total Child Development Guide](https://example.com)

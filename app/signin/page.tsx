@@ -1,0 +1,83 @@
+"use client";
+
+import { useState, useEffect, Suspense } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { signIn, getCurrentUser } from "@/lib/auth";
+
+function SignInForm() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || "/dashboard";
+
+  useEffect(() => {
+    const u = getCurrentUser();
+    if (u) {
+      router.push(redirectTo);
+    }
+  }, [router, redirectTo]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      await signIn(email, password);
+      router.push(redirectTo);
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message || "Failed to sign in.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
+      <div className="w-full max-w-md">
+        <div className="card">
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-bold">Welcome back</h1>
+            <p className="text-sm text-muted-foreground mt-1">Sign in to your Total Child account</p>
+          </div>
+          {error && (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+              {error}
+            </div>
+          )}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="label" htmlFor="email">Email</label>
+              <input id="email" type="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            </div>
+            <div>
+              <label className="label" htmlFor="password">Password</label>
+              <input id="password" type="password" className="input" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
+            </div>
+            <button type="submit" className="btn-primary w-full" disabled={loading}>
+              {loading ? "Signing in..." : "Sign In"}
+            </button>
+          </form>
+          <p className="text-center text-sm text-muted-foreground mt-4">
+            Don&apos;t have an account? <Link href={`/signup?redirect=${encodeURIComponent(redirectTo)}`} className="text-primary font-medium hover:underline">Sign up</Link>
+          </p>
+          <p className="text-center text-sm text-muted-foreground mt-1">
+            <Link href="/forgot-password" className="text-muted-foreground hover:text-foreground">Forgot password?</Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-muted/30" />}>
+      <SignInForm />
+    </Suspense>
+  );
+}
