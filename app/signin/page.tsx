@@ -29,8 +29,8 @@ function SignInForm() {
       await signIn(email, password);
       router.push(redirectTo);
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || "Failed to sign in.");
+    } catch (err) {
+      setError((err as Error)?.message || "Failed to sign in.");
     } finally {
       setLoading(false);
     }
@@ -42,7 +42,7 @@ function SignInForm() {
         <div className="card">
           <div className="text-center mb-6">
             <h1 className="text-2xl font-bold">Welcome back</h1>
-            <p className="text-sm text-muted-foreground mt-1">Sign in to your Total Child account</p>
+            <p className="text-sm text-muted-foreground mt-1">Sign in to continue your child&apos;s development journey</p>
           </div>
           {error && (
             <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">

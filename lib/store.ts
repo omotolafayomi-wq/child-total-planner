@@ -17,6 +17,7 @@ export interface Parent {
   emailVerified: boolean;
   verificationToken?: string;
   verificationExpires?: string;
+  role: "parent" | "admin";
   createdAt: string;
 }
 
@@ -191,23 +192,18 @@ function write<T>(key: string, value: T) {
 }
 
 export function createParent(email: string, name: string, passwordHash: string): Parent {
-  const token = generateToken();
   const parent: Parent = {
     id: generateId(),
     email,
     name,
     passwordHash,
-    emailVerified: false,
-    verificationToken: token,
-    verificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    emailVerified: true,
+    role: "parent",
     createdAt: new Date().toISOString(),
   };
   const parents = read<Parent[]>(STORE_KEYS.parents, []);
   parents.push(parent);
   write(STORE_KEYS.parents, parents);
-  const tokens = read<Record<string, string>>(STORE_KEYS.verificationTokens, {});
-  tokens[parent.id] = token;
-  write(STORE_KEYS.verificationTokens, tokens);
   return parent;
 }
 
@@ -221,6 +217,15 @@ export function updateParent(id: string, updates: Partial<Parent>) {
   const idx = parents.findIndex((p) => p.id === id);
   if (idx >= 0) {
     parents[idx] = { ...parents[idx], ...updates };
+    write(STORE_KEYS.parents, parents);
+  }
+}
+
+export function setParentRole(email: string, role: "parent" | "admin") {
+  const parents = read<Parent[]>(STORE_KEYS.parents, []);
+  const idx = parents.findIndex((p) => p.email.toLowerCase() === email.toLowerCase());
+  if (idx >= 0) {
+    parents[idx] = { ...parents[idx], role };
     write(STORE_KEYS.parents, parents);
   }
 }

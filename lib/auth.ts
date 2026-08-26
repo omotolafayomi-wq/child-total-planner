@@ -23,20 +23,18 @@ export async function signUp(email: string, name: string, password: string) {
   }
   const passwordHash = await hashPassword(password);
   const parent = createParent(email, name, passwordHash);
-  return { parent, verificationToken: parent.verificationToken };
+  const session = createSession(parent.id, parent.email, parent.name);
+  return { parent, session };
 }
 
 export async function signIn(email: string, password: string) {
   const parent = getParentByEmail(email);
   if (!parent) {
-    throw new Error("Invalid email or password.");
-  }
-  if (!parent.emailVerified) {
-    throw new Error("Please verify your email before signing in. Check your inbox for the verification link.");
+    throw new Error("Incorrect email or password.");
   }
   const valid = await verifyPassword(password, parent.passwordHash);
   if (!valid) {
-    throw new Error("Invalid email or password.");
+    throw new Error("Incorrect email or password.");
   }
   const session = createSession(parent.id, parent.email, parent.name);
   return { parent, session };
@@ -62,6 +60,7 @@ export function getCurrentUser() {
     location: parent.location,
     planningStyle: parent.planningStyle,
     emailVerified: parent.emailVerified,
+    role: parent.role,
   };
 }
 
@@ -79,4 +78,8 @@ export function verifyEmailByToken(token: string) {
 
 export function resendVerificationEmail(email: string) {
   return resendVerification(email);
+}
+
+export function isAdmin(user: ReturnType<typeof getCurrentUser>) {
+  return user?.role === "admin";
 }

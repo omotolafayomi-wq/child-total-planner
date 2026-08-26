@@ -37,8 +37,7 @@ Open [http://localhost:3000](http://localhost:3000) to start using the applicati
 ```
 app/                    # Next.js App Router pages
   signin/              # Sign in
-  signup/              # Sign up with email verification
-  verify-email/        # Email verification page
+  signup/              # Sign up
   dashboard/           # Protected dashboard routes
     children/          # Child profile management
     assess/            # Development assessment

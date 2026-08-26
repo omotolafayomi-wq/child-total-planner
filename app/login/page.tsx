@@ -21,8 +21,8 @@ function LoginForm({ redirectTo }: { redirectTo: string }) {
       await signIn(email, password);
       router.push(redirectTo || "/dashboard");
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || "Failed to sign in.");
+    } catch (err) {
+      setError((err as Error)?.message || "Failed to sign in.");
     } finally {
       setLoading(false);
     }

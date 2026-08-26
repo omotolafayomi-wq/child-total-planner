@@ -21,16 +21,6 @@ function FamilyIllustration() {
   );
 }
 
-function PillarIllustration({ color }: { color: string }) {
-  return (
-    <svg viewBox="0 0 80 80" className="w-16 h-16 mb-4" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <rect x="10" y="20" width="60" height="45" rx="6" fill={color} fillOpacity="0.15" stroke={color} strokeWidth="2"/>
-      <circle cx="40" cy="42" r="12" fill={color} fillOpacity="0.3"/>
-      <path d="M35 42 L40 37 L45 42 L40 47 Z" fill={color}/>
-    </svg>
-  );
-}
-
 export default function Home() {
   const session = typeof window !== "undefined" ? getSession() : null;
 
