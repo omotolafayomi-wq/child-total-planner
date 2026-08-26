@@ -103,3 +103,33 @@
 - **Mitigation:** Only show onboarding to users created after this update, or users with no children
 - **Risk:** Plan wizard duplicates existing weekly/monthly plan pages
 - **Mitigation:** Wizard outputs to existing plan pages; don't replace them
+
+## Open Issue: Broken Empty-State CTA
+
+### Problem
+Two "Add Your First Child" buttons still point to the old `/dashboard/children` page instead of the new guided onboarding flow:
+
+1. `app/dashboard/page.tsx` line 168 — dashboard empty state when `!selectedChild`
+2. `components/AppShell.tsx` line 307 — AppShell empty state when no child selected
+
+When a new user clicks either button, they land on the old child-management page rather than entering the `/onboarding/child` → `/onboarding/profile` → `/onboarding/plan` flow.
+
+### Root Cause
+The onboarding routes and empty-state CTAs were updated independently. The dashboard and AppShell empty states were never changed from `/dashboard/children` to `/onboarding/child`.
+
+### Fix
+Change both empty-state CTA links from `/dashboard/children` to `/onboarding/child`:
+
+- `app/dashboard/page.tsx:168` — `<Link href="/dashboard/children"` → `<Link href="/onboarding/child"`
+- `components/AppShell.tsx:307` — `<Link href="/dashboard/children"` → `<Link href="/onboarding/child"`
+
+### Validation
+1. Create new account → should land on `/onboarding/welcome`
+2. Click through onboarding → should reach `/dashboard` with child selected
+3. Sign out, sign in with account that has no children → should be redirected to `/onboarding/welcome` by AppShell guard
+4. If onboarding state is cleared but session remains, empty-state "Add Your First Child" should go to `/onboarding/child`
+
+### Notes
+- `/dashboard/children` remains functional for users who want to manage children directly
+- The onboarding flow creates real child records via `createChild()` — no data duplication
+- AppShell already guards: if onboarding is incomplete, users are redirected away from dashboard before seeing the empty state

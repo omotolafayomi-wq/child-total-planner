@@ -165,7 +165,7 @@ export default function DashboardPage() {
           <p className="text-muted-foreground mb-6 max-w-md mx-auto">
             Add your first child to start tracking their development journey across LEARN, LIVE, LEAD, EARN and SERVE.
           </p>
-          <Link href="/dashboard/children" className="btn-primary">
+          <Link href="/onboarding/child" className="btn-primary">
             Add Your First Child
           </Link>
         </div>

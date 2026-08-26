@@ -304,7 +304,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <p className="text-muted-foreground mb-6 max-w-md">
               Add your first child to begin their development journey.
             </p>
-            <Link href="/dashboard/children" className="btn-primary">
+            <Link href="/onboarding/child" className="btn-primary">
               Add Your First Child
             </Link>
           </div>
