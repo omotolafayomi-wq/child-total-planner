@@ -168,6 +168,9 @@ export default function DashboardPage() {
           <Link href="/onboarding/child" className="btn-primary">
             Add Your First Child
           </Link>
+          <Link href="/dashboard/activities" className="btn-outline">
+            Explore Activities
+          </Link>
         </div>
       ) : (
         <div className="space-y-6">

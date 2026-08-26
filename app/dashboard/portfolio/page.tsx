@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { getChildren, getEvidence, PILLARS } from "@/lib/store";
@@ -167,6 +168,10 @@ export default function PortfolioPage() {
           )}
         </>
       )}
+      <div className="card">
+        <p className="text-sm text-muted-foreground mb-3">Next step: Reflect on the child's growth.</p>
+        <Link href="/dashboard/reflections/parent-review" className="btn-primary">Write Reflection</Link>
+      </div>
     </div>
   );
 }

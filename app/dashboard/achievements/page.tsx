@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { getChildren, getAchievements, createAchievement } from "@/lib/store";
@@ -128,6 +129,10 @@ export default function AchievementsPage() {
             <p className="text-sm text-muted-foreground">
               <span className="font-medium">Note:</span> This is a private record for your family. There are no public leaderboards or comparisons.
             </p>
+          </div>
+          <div className="card">
+            <p className="text-sm text-muted-foreground mb-3">Continue the development journey.</p>
+            <Link href="/dashboard" className="btn-primary">Continue Journey</Link>
           </div>
         </>
       )}

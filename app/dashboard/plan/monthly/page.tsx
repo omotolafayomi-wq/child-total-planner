@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { getChildren, getPlans, createPlan, updatePlan, ACTIVITY_LIBRARY, PILLARS } from "@/lib/store";
@@ -266,6 +267,10 @@ export default function MonthlyPlanPage() {
           </div>
         </>
       )}
+      <div className="card">
+        <p className="text-sm text-muted-foreground mb-3">Next step: Document progress with evidence.</p>
+        <Link href="/dashboard/evidence" className="btn-primary">Add Evidence</Link>
+      </div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { getChildren, getChild, getReports, createReport, getGoals, getEvidence, getReflections, PILLARS, getPillarLabel } from "@/lib/store";
@@ -172,6 +173,10 @@ export default function ReportsPage() {
           )}
         </>
       )}
+      <div className="card">
+        <p className="text-sm text-muted-foreground mb-3">Next step: Discover new activities for your child.</p>
+        <Link href="/dashboard/activities" className="btn-primary">View Activities</Link>
+      </div>
     </div>
   );
 }
