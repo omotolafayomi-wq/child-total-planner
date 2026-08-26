@@ -20,6 +20,7 @@ export default function OnboardingCompletePage() {
       router.push("/onboarding/child");
       return;
     }
+    clearOnboardingState();
   }, [user, router, existing]);
 
   if (!user || !existing?.childId) {
@@ -31,12 +32,6 @@ export default function OnboardingCompletePage() {
   }
 
   const childName = existing.childData?.name || "your child";
-
-  function handleGoToDashboard() {
-    clearOnboardingState();
-    router.push("/dashboard");
-    router.refresh();
-  }
 
   return (
     <div className="min-h-screen flex flex-col bg-muted/30">
@@ -63,9 +58,9 @@ export default function OnboardingCompletePage() {
             You can now explore activities, set goals, build plans and track growth. We&apos;ll guide you at every step.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <button onClick={handleGoToDashboard} className="btn-primary text-base px-8 py-3">
+            <Link href="/dashboard" className="btn-primary text-base px-8 py-3">
               Go to Dashboard
-            </button>
+            </Link>
             <Link href="/dashboard/activities" className="btn-outline text-base px-8 py-3">
               Explore Activities
             </Link>

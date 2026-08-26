@@ -53,6 +53,7 @@ export default function DashboardPage() {
 
   const activeGoals = goals.filter((g) => g.status === "IN_PROGRESS" || g.status === "NOT_STARTED");
   const recentEvidence = evidence.slice(-3).reverse();
+  const hasProfileAssessment = assessments.some((a) => a.pillar === "DEVELOPMENT_PROFILE");
   const pillarAssessments = PILLARS.slice(0, 5).map((p) => {
     const assessment = assessments.find((a) => a.pillar === p.value);
     const levelIndex = assessment ? DEVELOPMENT_LEVELS.findIndex((l) => l.value === assessment.level) : -1;
@@ -61,7 +62,8 @@ export default function DashboardPage() {
 
   function renderNextStepCard() {
     if (!selectedChild) return null;
-    if (assessments.length === 0) {
+    const hasRealAssessment = assessments.some((a) => PILLARS.slice(0, 5).some((p) => p.value === a.pillar));
+    if (!hasRealAssessment) {
       return (
         <div className="card border-l-4 border-l-primary">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
