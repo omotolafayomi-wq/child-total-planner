@@ -19,6 +19,8 @@ function LoginForm({ redirectTo }: { redirectTo: string }) {
     try {
       const { signIn } = await import("@/lib/auth");
       await signIn(email, password);
+      setEmail("");
+      setPassword("");
       router.push(redirectTo || "/dashboard");
     } catch (err) {
       setError((err as Error)?.message || "Failed to sign in.");
@@ -55,18 +57,24 @@ function LoginForm({ redirectTo }: { redirectTo: string }) {
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirect") || "/dashboard";
+  const rawRedirect = searchParams.get("redirect") || "/dashboard";
+  const redirectTo = rawRedirect.startsWith("/") ? rawRedirect : "/dashboard";
   const [user, setUser] = useState<any>(null);
   const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
+    let mounted = true;
     getCurrentUser().then((u) => {
-      setUser(u);
-      if (u) {
+      if (mounted && u) {
         setRedirecting(true);
-        router.push(redirectTo);
+        setTimeout(() => {
+          router.push(redirectTo);
+        }, 300);
       }
     });
+    return () => {
+      mounted = false;
+    };
   }, [router, redirectTo]);
 
   if (user && redirecting) {

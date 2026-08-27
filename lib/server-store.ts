@@ -47,3 +47,11 @@ export function deleteServerSession(token: string) {
     sessions.splice(index, 1);
   }
 }
+
+export function updateServerParent(parentId: string, updates: any) {
+  const parents = getServerParents();
+  const index = parents.findIndex((p: any) => p.id === parentId);
+  if (index >= 0) {
+    parents[index] = { ...parents[index], ...updates };
+  }
+}

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { getParentByEmail, updateParent } from "@/lib/store";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -15,22 +14,24 @@ export default function ForgotPasswordPage() {
     setError("");
     setMessage("");
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 500));
-    const parent = getParentByEmail(email);
-    if (!parent) {
-      setError("No account found with that email.");
+    try {
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error || "Something went wrong.");
+      } else {
+        setMessage(data.message || "If an account exists, a temporary password has been sent.");
+      }
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
       setLoading(false);
-      return;
     }
-    const tempPassword = Math.random().toString(36).slice(-8);
-    const encoder = new TextEncoder();
-    const data = encoder.encode(tempPassword + "tcd_salt_2024");
-    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hash = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-    updateParent(parent.id, { passwordHash: hash });
-    setMessage(`Your temporary password is: ${tempPassword}. Sign in and update your password in Profile.`);
-    setLoading(false);
   };
 
   return (
@@ -47,7 +48,7 @@ export default function ForgotPasswordPage() {
           <div className="card">
             <div className="text-center mb-6">
               <h1 className="text-2xl font-bold">Reset Password</h1>
-              <p className="text-sm text-muted-foreground mt-1">We&apos;ll send a temporary password to your email</p>
+              <p className="text-sm text-muted-foreground mt-1">Enter your email and we&apos;ll send you a temporary password</p>
             </div>
             {error && (
               <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">

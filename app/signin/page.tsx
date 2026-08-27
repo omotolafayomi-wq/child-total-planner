@@ -14,15 +14,22 @@ function SignInForm() {
   const [redirecting, setRedirecting] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirect") || "/dashboard";
+  const rawRedirect = searchParams.get("redirect") || "/dashboard";
+  const redirectTo = rawRedirect.startsWith("/") ? rawRedirect : "/dashboard";
 
   useEffect(() => {
+    let mounted = true;
     getCurrentUser().then((u) => {
-      if (u) {
+      if (mounted && u) {
         setRedirecting(true);
-        router.push(redirectTo);
+        setTimeout(() => {
+          router.push(redirectTo);
+        }, 300);
       }
     });
+    return () => {
+      mounted = false;
+    };
   }, [router, redirectTo]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,6 +38,8 @@ function SignInForm() {
     setLoading(true);
     try {
       await signIn(email, password);
+      setEmail("");
+      setPassword("");
       const onboarding = getStoreOnboardingState();
       if (onboarding && onboarding.step !== "complete") {
         router.push(`/onboarding/${onboarding.step}`);

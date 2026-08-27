@@ -54,7 +54,7 @@ export async function signOut() {
 
 export async function getCurrentUser() {
   try {
-    const response = await fetch("/api/auth/session");
+    const response = await fetch("/api/auth/session", { cache: "no-store", next: { revalidate: 0 } });
     if (!response.ok) return null;
     const data = await response.json();
     return data.user;
