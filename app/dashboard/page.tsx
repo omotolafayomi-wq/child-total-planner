@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getCurrentUser, requireAuth } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { getChildren, getGoals, getPlans, getEvidence, getReflections, getAchievements, getAssessments, PILLARS, DEVELOPMENT_LEVELS, GOAL_STATUSES } from "@/lib/store";
 
 export default function DashboardPage() {
@@ -16,10 +16,13 @@ export default function DashboardPage() {
   const [reflections, setReflections] = useState<any[]>([]);
   const [achievements, setAchievements] = useState<any[]>([]);
   const [assessments, setAssessments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
+    let mounted = true;
     getCurrentUser().then((u) => {
+      if (!mounted) return;
       if (!u) {
         router.push("/signin");
         return;
@@ -33,8 +36,21 @@ export default function DashboardPage() {
         setSelectedChild(child);
         loadChildData(child.id);
       }
+      setLoading(false);
     });
+    return () => {
+      mounted = false;
+    };
   }, [router]);
+
+  useEffect(() => {
+    if (!selectedChild && children.length > 0) {
+      const child = children[0];
+      setSelectedChild(child);
+      localStorage.setItem("selectedChildId", child.id);
+      loadChildData(child.id);
+    }
+  }, [children, selectedChild]);
 
   function loadChildData(childId: string) {
     setGoals(getGoals(childId));
@@ -54,7 +70,6 @@ export default function DashboardPage() {
 
   const activeGoals = goals.filter((g) => g.status === "IN_PROGRESS" || g.status === "NOT_STARTED");
   const recentEvidence = evidence.slice(-3).reverse();
-  const hasProfileAssessment = assessments.some((a) => a.pillar === "DEVELOPMENT_PROFILE");
   const pillarAssessments = PILLARS.slice(0, 5).map((p) => {
     const assessment = assessments.find((a) => a.pillar === p.value);
     const levelIndex = assessment ? DEVELOPMENT_LEVELS.findIndex((l) => l.value === assessment.level) : -1;
@@ -132,6 +147,14 @@ export default function DashboardPage() {
     );
   }
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
   if (!user) return null;
 
   return (
@@ -160,20 +183,22 @@ export default function DashboardPage() {
       </div>
 
       {!selectedChild ? (
-        <div className="card text-center py-12">
+        <div className="card text-center py-8 sm:py-12">
           <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           </div>
           <h2 className="text-xl font-semibold mb-2">No children added yet</h2>
-          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+          <p className="text-muted-foreground mb-6 max-w-md mx-auto px-4">
             Add your first child to start tracking their development journey across LEARN, LIVE, LEAD, EARN and SERVE.
           </p>
-          <Link href="/onboarding/child" className="btn-primary">
-            Add Your First Child
-          </Link>
-          <Link href="/dashboard/activities" className="btn-outline">
-            Explore Activities
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center px-4">
+            <Link href="/onboarding/child" className="btn-primary w-full sm:w-auto">
+              Add Your First Child
+            </Link>
+            <Link href="/dashboard/activities" className="btn-outline w-full sm:w-auto">
+              Explore Activities
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="space-y-6">

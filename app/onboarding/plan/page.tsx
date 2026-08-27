@@ -93,7 +93,6 @@ export default function OnboardingPlanPage() {
         parentId: existing!.parentId,
       } as any);
       router.push("/onboarding/complete");
-      router.refresh();
     } catch (err) {
       setError("We couldn't save that just now. Please try again.");
     } finally {

@@ -27,6 +27,15 @@ export default function OnboardingCompletePage() {
     clearOnboardingState();
   }, [user, router, existing]);
 
+  useEffect(() => {
+    if (user && existing?.childId) {
+      const timer = setTimeout(() => {
+        router.push("/dashboard");
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [user, existing, router]);
+
   if (!user || !existing?.childId) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/30">
@@ -69,6 +78,9 @@ export default function OnboardingCompletePage() {
               Explore Activities
             </Link>
           </div>
+          <p className="text-xs text-muted-foreground mt-4">
+            Redirecting to dashboard in a few seconds...
+          </p>
         </div>
       </main>
     </div>

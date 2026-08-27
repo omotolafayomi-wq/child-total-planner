@@ -191,6 +191,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   }, [authChecked, session, pathname, router]);
 
+  useEffect(() => {
+    if (!session) return;
+    const isDashboard = pathname === "/dashboard" || pathname.startsWith("/dashboard/");
+    if (!isDashboard) return;
+    const kids = getChildren(session.parentId);
+    setChildrenList(kids);
+    if (kids.length > 0 && !selectedChildId) {
+      const saved = localStorage.getItem("selectedChildId");
+      const child = kids.find((c: any) => c.id === saved) || kids[0];
+      setSelectedChildId(child.id);
+      localStorage.setItem("selectedChildId", child.id);
+    }
+  }, [pathname, session, selectedChildId]);
+
   const handleSignOut = async () => {
     await signOut();
     setSession(null);
@@ -388,20 +402,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </header>
 
       <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-6 pb-24 md:pb-6">
-        {selectedChildId ? (
+        {selectedChildId && childrenList.length > 0 ? (
           children
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="flex flex-col items-center justify-center py-8 sm:py-20 text-center">
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
               <ChildrenIcon />
             </div>
             <h1 className="text-2xl font-bold mb-2">Welcome to Total Child</h1>
-            <p className="text-muted-foreground mb-6 max-w-md">
-              Add your first child to begin their development journey.
+            <p className="text-muted-foreground mb-6 max-w-md px-4">
+              Add your first child to begin their development journey across LEARN, LIVE, LEAD, EARN and SERVE.
             </p>
-            <Link href="/onboarding/child" className="btn-primary">
-              Add Your First Child
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center px-4 w-full max-w-md">
+              <Link href="/onboarding/child" className="btn-primary w-full sm:w-auto">
+                Add Your First Child
+              </Link>
+              <Link href="/dashboard/activities" className="btn-outline w-full sm:w-auto">
+                Explore Activities
+              </Link>
+            </div>
           </div>
         )}
       </main>
