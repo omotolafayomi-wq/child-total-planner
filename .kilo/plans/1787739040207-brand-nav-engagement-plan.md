@@ -1,116 +1,68 @@
-# Plan: Total Child Brand, Form Navigation, and Activity Engagement
+# Plan: Fix Sign-In Glitch + Stabilize Redirects
 
 ## Goal
-1. Make the **Total Child** brand link/button visible and clickable on every page, including auth pages, and ensure it always routes to the landing page (`/`).
-2. Add **Back / Next** step navigation to long onboarding forms so users can move through sections without losing progress.
-3. Make the **Activities** experience more engaging by connecting activities to plans/goals with clear CTAs.
+1. Fix the visual glitch on `/signin` caused by a mismatched `Suspense` fallback.
+2. Stabilize post-sign-in navigation so it consistently leads to the dashboard (or onboarding when applicable).
+3. Ensure the **Total Child** brand link on auth pages always points to `/` (landing page).
 
 ---
 
-## 1. Total Child Brand Everywhere
-
-### Current state
-- `components/AppShell.tsx` already shows `Total Child` in the header and links to `/`.
-- Auth pages (`app/signin/page.tsx`, `app/signup/page.tsx`, `app/forgot-password/page.tsx`) render full-screen centered cards with **no header**.
-- Some onboarding pages have the brand header; others do not.
-
-### Required changes
-For every page that currently renders a bare full-screen layout without the branded header, wrap the content with the same header pattern used in `app/onboarding/welcome/page.tsx`:
-
-```tsx
-<header className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-border no-print">
-  <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
-    <Link href="/" className="text-lg font-bold text-primary tracking-tight">
-      Total Child
-    </Link>
-  </div>
-</header>
-<main className="flex-1 w-full max-w-6xl mx-auto px-4 py-6">
-  {/* existing page content */}
-</main>
-```
-
-### Files to update
-- `app/signin/page.tsx`
-- `app/signup/page.tsx`
-- `app/forgot-password/page.tsx`
-- `app/login/page.tsx` (if it exists and lacks the header)
-- `app/onboarding/plan/page.tsx` (verify it has the header)
-
-### Rule
-The `Total Child` link **must** point to `/` (landing page). Never point it to `/dashboard` or any authenticated route, because unauthenticated users also need to reach the landing page.
+## Current state
+- `app/signin/page.tsx` wraps `SignInForm` in `<Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-muted/30" />}>`.
+- `SignInForm` now returns a layout with a sticky `<header>` containing the `Total Child` link and a `<main>` content area.
+- The `fallback` has **no header** and uses `items-center justify-center`, while the resolved component uses `flex flex-col` with a header. This causes a visible layout shift when `useSearchParams()` resolves.
+- Post-sign-in, `handleSubmit` calls `router.push(...)` then `router.refresh()`. The refresh after navigation is unnecessary and can cause flicker or double-navigation behavior.
+- There is no explicit loading/redirect state while the auth check runs; the form appears immediately even if the user is already logged in and about to be redirected.
 
 ---
 
-## 2. Back / Next Buttons on Onboarding Forms
+## Required changes
 
-### Current state
-- `app/onboarding/child/page.tsx` has a single long form with ~12 fields.
-- `app/onboarding/profile/page.tsx` has a single long form with 6 textareas.
-- Both forms only have a single submit button and a "Save & Finish Later" link.
+### 1. Fix `app/signin/page.tsx`
+- Update the `Suspense` fallback to match the header layout so there is no CLS/layout shift:
+  ```tsx
+  <Suspense fallback={
+    <div className="min-h-screen flex flex-col bg-muted/30">
+      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-border no-print">
+        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+          <span className="text-lg font-bold text-primary tracking-tight">Total Child</span>
+        </div>
+      </header>
+      <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-6">
+        <div className="max-w-md mx-auto">
+          <div className="card">
+            <div className="text-center py-12 text-muted-foreground">Loading...</div>
+          </div>
+        </div>
+      </main>
+    </div>
+  }>
+  ```
+- Add a `redirecting` state in `SignInForm`:
+  ```tsx
+  const [redirecting, setRedirecting] = useState(false);
+  ```
+- In the `useEffect` that checks `getCurrentUser()`, set `redirecting = true` before `router.push(...)`.
+- Render a redirect overlay or replace the form body when `redirecting` is true:
+  ```tsx
+  {redirecting && (
+    <div className="text-center py-12 text-muted-foreground">Redirecting...</div>
+  )}
+  ```
+- Remove the unnecessary `router.refresh()` after `router.push(...)` in `handleSubmit`.
+- Ensure the `Total Child` link in the header uses `href="/"`.
 
-### Required pattern
-Split each form into logical steps and add Back/Next navigation at the bottom.
+### 2. Verify `/login` page consistency
+- Check `app/login/page.tsx` for the same fallback mismatch. Apply the same pattern if found.
 
-#### Step design for `child/page.tsx`
-- **Step 0 — Basics**: Full Name, Preferred Name, Age, Date of Birth
-- **Step 1 — School**: School Level, Gender, School Name, Location
-- **Step 2 — More**: Interests, Hobbies, Strengths, Skills, Areas For Support
-
-#### Step design for `profile/page.tsx`
-- **Step 0 — Strengths**: Current Strengths, Areas Worth Developing
-- **Step 1 — Interests**: Interests, Current Responsibilities
-- **Step 2 — Skills**: Existing Skills, Parent Priorities
-
-#### Button behavior
-- First step: **Next** only (Back disabled)
-- Middle steps: **Back** + **Next**
-- Last step: **Back** + **Save & Continue** (submit)
-- Show a progress indicator (e.g., "Step 2 of 3") above the form.
-
-### Implementation notes
-- Keep the existing `handleSubmit` / save logic intact on the final step.
-- Do **not** auto-advance on Next; validate required fields for the current step before advancing. If validation fails, show inline errors.
-- Preserve the `ProgressIndicator` component already present in onboarding pages.
-
----
-
-## 3. Make Activities Engaging with CTAs
-
-### Current state
-- `app/dashboard/activities/page.tsx` shows a search/filter bar, a plan-creation form, existing plans, and a grid of activity cards.
-- Activity cards are mostly informational (title, description, pillar, cost).
-- The only CTA is a generic "Build Plan" card at the bottom.
-
-### Required changes
-1. **Add hover lift and shadow** to activity cards so they feel interactive.
-2. **Add per-card CTAs**:
-   - Primary button: **"Add to Plan"** — adds the activity to the current plan (or opens the plan-creation form pre-selected with that activity).
-   - Secondary button: **"View Details"** — opens an inline expandable section or modal with full description, safety notes, and cost alternatives.
-   - Tertiary: **"Save"** bookmark icon toggles a saved state (use `localStorage` key `savedActivities`).
-3. **Connect activities to goals/modules**:
-   - If an activity matches a pillar with an active goal, show a small badge: *"Linked to Goal: [goal text]"* with a link to `/dashboard/goals`.
-   - If the activity belongs to a module (e.g., `life-skills`, `digital-builder`), show a link: *"Explore module"* pointing to that module page.
-4. **Empty state CTA**: When no activities match the filter, show a friendly message with a button to **"Reset filters"** or **"Browse all activities"**.
-5. **"Quick Add" bar**: Add a sticky bar at the top of the activities list that shows how many activities are currently selected (when the plan-creation form is open) with a single **"Create Plan from Selected"** button.
-
-### Files to update
-- `app/dashboard/activities/page.tsx`
-- Consider extracting a reusable `ActivityCard` component in `components/ActivityCard.tsx` if one does not exist.
+### 3. Validation
+- Run `npm run build`.
+- Manual checks:
+  - Load `/signin` fresh — no layout shift should occur.
+  - Sign in with valid credentials — consistent redirect to `/dashboard` (or `/onboarding/...` if incomplete).
+  - Click `Total Child` on `/signin` — goes to `/`.
 
 ---
 
-## 4. Validation & Rollout
-
-1. Run `npm run build` after changes.
-2. Manually verify:
-   - `/`, `/signin`, `/signup`, `/forgot-password`, `/dashboard`, `/onboarding/child`, `/onboarding/profile` all show the `Total Child` header linking to `/`.
-   - Onboarding child and profile forms allow forward/backward navigation without losing entered data.
-   - Activities page cards have hover effects, per-card CTAs, and module/goal links where applicable.
-3. No database or API changes are required; all state remains client-side / localStorage.
-
----
-
-## 5. Open Questions
-- Should the `Total Child` header also appear on `/login` if that route exists separately from `/signin`? **Recommended**: yes, treat it the same as signin.
-- Should saved/bookmarked activities persist across devices? **Recommended**: keep localStorage for now; cross-device sync is out of scope for this task.
+## Open questions
+- None. The fix is straightforward and fully scoped to `app/signin/page.tsx` and potentially `app/login/page.tsx`.

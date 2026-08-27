@@ -20,7 +20,6 @@ function LoginForm({ redirectTo }: { redirectTo: string }) {
       const { signIn } = await import("@/lib/auth");
       await signIn(email, password);
       router.push(redirectTo || "/dashboard");
-      router.refresh();
     } catch (err) {
       setError((err as Error)?.message || "Failed to sign in.");
     } finally {
@@ -58,16 +57,36 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/dashboard";
   const [user, setUser] = useState<any>(null);
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
-    getCurrentUser().then(setUser);
-  }, []);
+    getCurrentUser().then((u) => {
+      setUser(u);
+      if (u) {
+        setRedirecting(true);
+        router.push(redirectTo);
+      }
+    });
+  }, [router, redirectTo]);
 
-  useEffect(() => {
-    if (user) {
-      router.push(redirectTo);
-    }
-  }, [user, router, redirectTo]);
+  if (user && redirecting) {
+    return (
+      <div className="min-h-screen flex flex-col bg-muted/30">
+        <header className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-border no-print">
+          <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+            <span className="text-lg font-bold text-primary tracking-tight">Total Child</span>
+          </div>
+        </header>
+        <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-6">
+          <div className="w-full max-w-md mx-auto">
+            <div className="card">
+              <div className="text-center py-12 text-muted-foreground">Redirecting...</div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   if (user) return null;
 
@@ -100,7 +119,22 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-muted/30" />}>
+    <Suspense fallback={
+      <div className="min-h-screen flex flex-col bg-muted/30">
+        <header className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-border no-print">
+          <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+            <span className="text-lg font-bold text-primary tracking-tight">Total Child</span>
+          </div>
+        </header>
+        <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-6">
+          <div className="w-full max-w-md mx-auto">
+            <div className="card">
+              <div className="text-center py-12 text-muted-foreground">Loading...</div>
+            </div>
+          </div>
+        </main>
+      </div>
+    }>
       <LoginContent />
     </Suspense>
   );
