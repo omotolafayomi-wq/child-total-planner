@@ -112,7 +112,7 @@ export default function OnboardingPlanPage() {
     <div className="min-h-screen flex flex-col bg-muted/30">
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-border">
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link href="/dashboard" className="text-lg font-bold text-primary tracking-tight">
+          <Link href="/" className="text-lg font-bold text-primary tracking-tight">
             Total Child
           </Link>
         </div>

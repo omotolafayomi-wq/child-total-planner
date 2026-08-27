@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signUp } from "@/lib/auth";
+import { signIn, signUp, getCurrentUser } from "@/lib/auth";
 
 function SignUpForm() {
   const [name, setName] = useState("");
@@ -13,7 +13,17 @@ function SignUpForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    getCurrentUser().then((u) => {
+      if (u) {
+        setRedirecting(true);
+        router.push("/dashboard");
+      }
+    });
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,8 +44,7 @@ function SignUpForm() {
         setSuccess(true);
         setTimeout(() => {
           router.push("/onboarding/welcome");
-          router.refresh();
-        }, 800);
+        }, 600);
       }
     } catch (err) {
       setError((err as Error)?.message || "Failed to create account.");
@@ -43,6 +52,25 @@ function SignUpForm() {
       setLoading(false);
     }
   };
+
+  if (redirecting) {
+    return (
+      <div className="min-h-screen flex flex-col bg-muted/30">
+        <header className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-border no-print">
+          <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+            <span className="text-lg font-bold text-primary tracking-tight">Total Child</span>
+          </div>
+        </header>
+        <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-6">
+          <div className="max-w-md mx-auto">
+            <div className="card">
+              <div className="text-center py-12 text-muted-foreground">Redirecting...</div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-muted/30">
@@ -103,7 +131,22 @@ function SignUpForm() {
 
 export default function SignUpPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-muted/30" />}>
+    <Suspense fallback={
+      <div className="min-h-screen flex flex-col bg-muted/30">
+        <header className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-border no-print">
+          <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+            <span className="text-lg font-bold text-primary tracking-tight">Total Child</span>
+          </div>
+        </header>
+        <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-6">
+          <div className="max-w-md mx-auto">
+            <div className="card">
+              <div className="text-center py-12 text-muted-foreground">Loading...</div>
+            </div>
+          </div>
+        </main>
+      </div>
+    }>
       <SignUpForm />
     </Suspense>
   );
