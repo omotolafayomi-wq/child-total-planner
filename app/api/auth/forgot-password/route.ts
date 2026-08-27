@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Your temporary password is: ${tempPassword}. Sign in and update your password in Profile.`,
+      message: "If an account exists, a temporary password has been sent.",
     });
   } catch (error) {
     return NextResponse.json({ error: "Password reset failed." }, { status: 500 });

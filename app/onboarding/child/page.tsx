@@ -193,8 +193,55 @@ export default function OnboardingChildPage() {
       setSaved(true);
       setTimeout(() => {
         router.push("/onboarding/profile");
-        router.refresh();
       }, 600);
+    } catch (err) {
+      setError("We couldn't save that just now. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleSaveAndAddAnother(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    if (!form.name.trim()) {
+      setError("Please enter the child's full name.");
+      return;
+    }
+    const ageNum = Number(form.age);
+    if (!form.age || isNaN(ageNum) || ageNum < 3 || ageNum > 18) {
+      setError("Please enter a valid age between 3 and 18.");
+      return;
+    }
+    setLoading(true);
+    try {
+      createChild({
+        parentId: user!.id,
+        name: form.name.trim(),
+        age: ageNum,
+        schoolLevel: form.schoolLevel.trim() || "Not specified",
+        gender: form.gender.trim() || undefined,
+        interests: form.interests.split(",").map((s) => s.trim()).filter(Boolean),
+        strengths: form.strengths.split(",").map((s) => s.trim()).filter(Boolean),
+        areasForSupport: form.areasForSupport.split(",").map((s) => s.trim()).filter(Boolean),
+      });
+      setForm({
+        name: "",
+        preferredName: "",
+        age: "",
+        dateOfBirth: "",
+        schoolLevel: "",
+        gender: "",
+        schoolName: "",
+        location: "",
+        interests: "",
+        hobbies: "",
+        strengths: "",
+        skills: "",
+        areasForSupport: "",
+      });
+      setCurrentStep(0);
+      setSaved(false);
     } catch (err) {
       setError("We couldn't save that just now. Please try again.");
     } finally {
@@ -377,11 +424,11 @@ export default function OnboardingChildPage() {
               ) : (
                 <>
                   <button type="submit" className="btn-primary flex-1" disabled={loading}>
-                    {loading ? "Saving..." : saved ? "Saved" : "Save & Continue"}
+                    {loading ? "Saving..." : saved ? "Saved" : "Save & Create Profile"}
                   </button>
-                  <Link href="/dashboard" className="btn-outline text-center">
-                    Save & Finish Later
-                  </Link>
+                  <button type="button" onClick={handleSaveAndAddAnother} className="btn-outline flex-1" disabled={loading}>
+                    Save & Add Another Child
+                  </button>
                 </>
               )}
             </div>

@@ -164,7 +164,7 @@ function generateToken(): string {
 
 const STORE_KEYS = {
   parents: "tcd_parents",
-  sessions: "tcd_sessions",
+  sessions: "sessions",
   children: "tcd_children",
   assessments: "tcd_assessments",
   goals: "tcd_goals",
@@ -266,14 +266,14 @@ export function createSession(parentId: string, email: string, name: string): Se
   sessions.push(session);
   write(STORE_KEYS.sessions, sessions);
   if (typeof document !== "undefined") {
-    document.cookie = `tcd_session=${session.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+    document.cookie = `session=${session.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
   }
   return session;
 }
 
 export function getSession(): Session | null {
   if (typeof document === "undefined") return null;
-  const match = document.cookie.match(/tcd_session=([^;]+)/);
+  const match = document.cookie.match(/session=([^;]+)/);
   const token = match?.[1];
   if (!token) return null;
   const sessions = read<Session[]>(STORE_KEYS.sessions, []);
@@ -291,7 +291,7 @@ export function deleteSession(token: string) {
   sessions = sessions.filter((s) => s.token !== token);
   write(STORE_KEYS.sessions, sessions);
   if (typeof document !== "undefined") {
-    document.cookie = "tcd_session=; path=/; max-age=0; SameSite=Lax";
+    document.cookie = "session=; path=/; max-age=0; SameSite=Lax";
   }
 }
 
@@ -589,3 +589,4 @@ export function clearOnboardingState() {
   if (typeof window === "undefined") return;
   localStorage.removeItem(STORE_KEYS.onboarding);
 }
+

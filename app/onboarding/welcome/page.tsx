@@ -10,7 +10,7 @@ const steps = [
   { key: "welcome", label: "Welcome" },
   { key: "child", label: "Child" },
   { key: "profile", label: "Profile" },
-  { key: "plan", label: "Plan" },
+  { key: "plan", label: "Start Plan" },
 ] as const;
 
 function ProgressIndicator({ currentStep }: { currentStep: (typeof steps)[number]["key"] }) {
@@ -25,16 +25,10 @@ function ProgressIndicator({ currentStep }: { currentStep: (typeof steps)[number
             <li key={step.key} className="flex-1 flex flex-col items-center">
               <div className="flex items-center w-full">
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold border-2 transition-colors ${
-                    isCompleted
-                      ? "bg-growth-600 border-growth-600 text-white"
-                      : isCurrent
-                        ? "bg-white border-primary text-primary"
-                        : "bg-white border-border text-muted-foreground"
-                  }`}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold border-2 transition-colors ${isCompleted ? "bg-growth-600 border-growth-600 text-white" : isCurrent ? "bg-white border-primary text-primary" : "bg-white border-border text-muted-foreground"}`}
                   aria-current={isCurrent ? "step" : undefined}
                 >
-                  {isCompleted ? "✓" : idx + 1}
+                  {isCompleted ? "✓" : String(idx + 1).padStart(2, "0")}
                 </div>
                 {idx < steps.length - 1 && (
                   <div className={`flex-1 h-0.5 mx-2 ${isCompleted ? "bg-growth-600" : "bg-border"}`} aria-hidden="true" />
@@ -84,11 +78,14 @@ export default function OnboardingWelcomePage() {
     );
   }
 
+  const existing = getStoreOnboardingState(user.id);
+  const childName = existing?.childData?.name;
+
   return (
     <div className="min-h-screen flex flex-col bg-muted/30">
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-border">
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link href="/dashboard" className="text-lg font-bold text-primary tracking-tight">
+          <Link href="/" className="text-lg font-bold text-primary tracking-tight">
             Total Child
           </Link>
         </div>
@@ -111,12 +108,25 @@ export default function OnboardingWelcomePage() {
           <p className="text-muted-foreground mb-8">
             You do not need to plan everything at once. We&apos;ll help you understand your child&apos;s current capabilities, identify priorities and build a realistic path forward.
           </p>
+
+          {childName && (
+            <div className="mb-6 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-primary">
+              <p className="font-medium mb-2">Welcome back. You were creating a development profile for {childName}.</p>
+              <Link href="/onboarding/child" className="btn-primary text-sm px-4 py-2">
+                Continue
+              </Link>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/onboarding/child" className="btn-primary text-base px-8 py-3">
               Add My Child
             </Link>
             <Link href="/dashboard" className="btn-outline text-base px-8 py-3">
               Explore First
+            </Link>
+            <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-foreground px-4 py-3">
+              Skip for Now
             </Link>
           </div>
         </div>

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { getChildren, getPlans, createPlan, updatePlan, ACTIVITY_LIBRARY, PILLARS, SAFETY_LEVELS } from "@/lib/store";
 import BackButton from "@/components/BackButton";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 export default function ActivitiesPage() {
   const [user, setUser] = useState<any>(null);
@@ -105,6 +106,7 @@ export default function ActivitiesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <BackButton />
+      <Breadcrumbs />
           <h1 className="text-2xl font-bold">Activities</h1>
           <p className="text-muted-foreground">Discover development activities aligned to LEARN, LIVE, LEAD, EARN, SERVE and more</p>
         </div>

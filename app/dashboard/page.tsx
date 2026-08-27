@@ -77,30 +77,29 @@ export default function DashboardPage() {
   });
 
   function renderNextStepCard() {
-    if (!selectedChild) return null;
+    if (!selectedChild) {
+      return (
+        <div className="card border-l-4 border-l-primary">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="font-semibold">Your next step is to add your first child.</h3>
+              <p className="text-sm text-muted-foreground mt-1">Start by adding a child profile to begin their development journey.</p>
+            </div>
+            <Link href="/onboarding/child" className="btn-primary whitespace-nowrap">Add Your First Child</Link>
+          </div>
+        </div>
+      );
+    }
     const hasRealAssessment = assessments.some((a) => PILLARS.slice(0, 5).some((p) => p.value === a.pillar));
     if (!hasRealAssessment) {
       return (
         <div className="card border-l-4 border-l-primary">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h3 className="font-semibold">Next step: Complete your child&apos;s development assessment</h3>
-              <p className="text-sm text-muted-foreground mt-1">Understand current capabilities across all development domains.</p>
+              <h3 className="font-semibold">Create Development Profile</h3>
+              <p className="text-sm text-muted-foreground mt-1">Your child's profile is ready. Now let's understand where they are today.</p>
             </div>
-            <Link href="/dashboard/assess" className="btn-primary whitespace-nowrap">Complete Assessment</Link>
-          </div>
-        </div>
-      );
-    }
-    if (activeGoals.length === 0) {
-      return (
-        <div className="card border-l-4 border-l-growth-600">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h3 className="font-semibold">Next step: Choose three priority goals</h3>
-              <p className="text-sm text-muted-foreground mt-1">Turn your assessment into focused, achievable goals.</p>
-            </div>
-            <Link href="/dashboard/goals" className="btn-primary whitespace-nowrap">Set Goals</Link>
+            <Link href="/onboarding/profile" className="btn-primary whitespace-nowrap">Create Development Profile</Link>
           </div>
         </div>
       );
@@ -110,10 +109,23 @@ export default function DashboardPage() {
         <div className="card border-l-4 border-l-gold-500">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h3 className="font-semibold">Next step: Build your first plan</h3>
-              <p className="text-sm text-muted-foreground mt-1">Organise activities into a weekly or monthly timetable.</p>
+              <h3 className="font-semibold">Now let's create a plan.</h3>
+              <p className="text-sm text-muted-foreground mt-1">Turn your assessment into a structured development plan.</p>
             </div>
-            <Link href="/dashboard/plan/weekly" className="btn-primary whitespace-nowrap">Build Plan</Link>
+            <Link href="/onboarding/plan" className="btn-primary whitespace-nowrap">Start Plan</Link>
+          </div>
+        </div>
+      );
+    }
+    if (activeGoals.length === 0) {
+      return (
+        <div className="card border-l-4 border-l-growth-600">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="font-semibold">Begin with a development assessment.</h3>
+              <p className="text-sm text-muted-foreground mt-1">Understand current capabilities across all development domains.</p>
+            </div>
+            <Link href="/dashboard/assess" className="btn-primary whitespace-nowrap">Assess Child</Link>
           </div>
         </div>
       );
@@ -123,16 +135,30 @@ export default function DashboardPage() {
         <div className="card border-l-4 border-l-purple-500">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h3 className="font-semibold">Next step: Add evidence of growth</h3>
-              <p className="text-sm text-muted-foreground mt-1">Document what your child has accomplished.</p>
+              <h3 className="font-semibold">Turn goals into actionable activities.</h3>
+              <p className="text-sm text-muted-foreground mt-1">Discover practical activities aligned with your goals.</p>
             </div>
-            <Link href="/dashboard/evidence" className="btn-primary whitespace-nowrap">Add Evidence</Link>
+            <Link href="/dashboard/activities" className="btn-primary whitespace-nowrap">Discover Activities</Link>
+          </div>
+        </div>
+      );
+    }
+    const hasIncompletePlan = plans.some((plan) => plan.entries.some((entry: any) => !entry.completed));
+    if (hasIncompletePlan) {
+      return (
+        <div className="card border-l-4 border-l-emerald-500">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="font-semibold">See what needs to happen today.</h3>
+              <p className="text-sm text-muted-foreground mt-1">You have active activities in your plan.</p>
+            </div>
+            <Link href="/dashboard/plan/weekly" className="btn-primary whitespace-nowrap">View Today's Plan</Link>
           </div>
         </div>
       );
     }
     return (
-      <div className="card border-l-4 border-l-emerald-500">
+      <div className="card border-l-4 border-l-blue-500">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h3 className="font-semibold">Keep the momentum going</h3>
@@ -146,6 +172,7 @@ export default function DashboardPage() {
       </div>
     );
   }
+
 
   if (loading) {
     return (

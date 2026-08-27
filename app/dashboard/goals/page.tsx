@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { getChildren, getGoals, createGoal, updateGoal, deleteGoal, PILLARS, DEVELOPMENT_LEVELS, GOAL_STATUSES } from "@/lib/store";
 import BackButton from "@/components/BackButton";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 const CHILD_VOICE_QUESTIONS = [
   "What are you proud of this month?",
@@ -158,6 +159,7 @@ export default function GoalsPage() {
   return (
     <div className="space-y-6">
       <BackButton />
+      <Breadcrumbs />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Goals</h1>

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { getChildren, getEvidence, createEvidence, deleteEvidence, getGoals, PILLARS } from "@/lib/store";
 import BackButton from "@/components/BackButton";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 const EVIDENCE_TYPES = [
   { value: "text", label: "Text" },
@@ -98,6 +99,7 @@ export default function EvidencePage() {
   return (
     <div className="space-y-6">
       <BackButton />
+      <Breadcrumbs />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Evidence & Tracker</h1>

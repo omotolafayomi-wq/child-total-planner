@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getParentByEmail, setParentRole } from "@/lib/store";
+import { getServerParentByEmail, updateServerParent } from "@/lib/server-store";
 
 export async function POST(request: NextRequest) {
   if (process.env.NODE_ENV !== "development") {
@@ -13,11 +13,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Email and role are required" }, { status: 400 });
   }
 
-  const parent = getParentByEmail(email);
+  const parent = getServerParentByEmail(email);
   if (!parent) {
     return NextResponse.json({ error: "Parent not found" }, { status: 404 });
   }
 
-  setParentRole(email, role);
+  updateServerParent(parent.id, { role });
   return NextResponse.json({ success: true, email, role });
 }
+
+
+

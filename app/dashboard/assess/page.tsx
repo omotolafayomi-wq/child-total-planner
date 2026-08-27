@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { getCurrentUser, requireAuth } from "@/lib/auth";
 import { getChildren, getAssessments, createAssessment, PILLARS, DEVELOPMENT_LEVELS } from "@/lib/store";
 import BackButton from "@/components/BackButton";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 const PRIMARY_PILLARS = PILLARS.slice(0, 5);
 const SUPPORTING_AREAS = PILLARS.slice(5);
@@ -108,6 +109,7 @@ export default function AssessPage() {
       ) : (
         <>
           <BackButton />
+      <Breadcrumbs />
           <div className="flex items-center gap-3">
             <label className="label mb-0">Child:</label>
             <select value={selectedChildId} onChange={(e) => handleChildChange(e.target.value)} className="input w-auto">

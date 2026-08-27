@@ -90,7 +90,7 @@ export default function ChildrenPage() {
           <h1 className="text-2xl font-bold">My Children</h1>
           <p className="text-muted-foreground">Manage your children&apos;s development profiles</p>
         </div>
-        <button onClick={() => { resetForm(); setShowForm(!showForm); }} className="btn-primary">
+        <button onClick={() => { resetForm(); setShowForm(!showForm); }} className="btn-primary" aria-expanded={showForm} aria-controls="child-form">
           {showForm ? "Cancel" : "+ Add Child"}
         </button>
       </div>
@@ -98,7 +98,7 @@ export default function ChildrenPage() {
       {showForm && (
         <div className="card">
           <h2 className="text-lg font-semibold mb-4">{editingId ? "Edit Child" : "Add New Child"}</h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" id="child-form" aria-label="Child form">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="label" htmlFor="name">Name</label>

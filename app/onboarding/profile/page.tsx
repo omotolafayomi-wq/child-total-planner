@@ -169,7 +169,6 @@ export default function OnboardingProfilePage() {
       setSaved(true);
       setTimeout(() => {
         router.push("/onboarding/plan");
-        router.refresh();
       }, 600);
     } catch (err) {
       setError("We couldn't save that just now. Please try again.");
@@ -205,6 +204,10 @@ export default function OnboardingProfilePage() {
             <p className="text-muted-foreground">
               We&apos;ll use this to understand your child&apos;s current capabilities and plan realistic growth. This is not a test.
             </p>
+            <div className="mt-4 rounded-lg border border-gold-200 bg-gold-50 px-4 py-3 text-sm text-gold-800">
+              <p className="font-medium">Important Notice</p>
+              <p className="mt-1">This is a planning and development tool, not a psychological, intelligence or clinical assessment.</p>
+            </div>
           </div>
 
           {saved && (
