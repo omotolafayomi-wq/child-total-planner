@@ -16,18 +16,19 @@ export default function ProfilePage() {
   const router = useRouter();
 
   useEffect(() => {
-    const u = getCurrentUser();
-    if (!u) {
-      router.push("/signin");
-      return;
-    }
-    setUser(u);
-    setForm({
-      name: u.name || "",
-      email: u.email || "",
-      phone: u.phone || "",
-      location: u.location || "",
-      planningStyle: u.planningStyle || "",
+    getCurrentUser().then((u) => {
+      if (!u) {
+        router.push("/signin");
+        return;
+      }
+      setUser(u);
+      setForm({
+        name: u.name || "",
+        email: u.email || "",
+        phone: u.phone || "",
+        location: u.location || "",
+        planningStyle: u.planningStyle || "",
+    });
     });
   }, [router]);
 

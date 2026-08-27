@@ -25,18 +25,19 @@ export default function HolidayPage() {
   const pillarInfo = PILLARS.find((p) => p.value === PILLAR);
 
   useEffect(() => {
-    const u = getCurrentUser();
-    if (!u) {
-      router.push("/signin");
-      return;
-    }
-    setUser(u);
-    const kids = getChildren(u.id);
-    setChildren(kids);
-    if (kids.length > 0) {
-      const saved = localStorage.getItem("selectedChildId");
-      setSelectedChildId(saved || kids[0].id);
-    }
+    getCurrentUser().then((u) => {
+      if (!u) {
+        router.push("/signin");
+        return;
+      }
+      setUser(u);
+      const kids = getChildren(u.id);
+      setChildren(kids);
+      if (kids.length > 0) {
+        const saved = localStorage.getItem("selectedChildId");
+        setSelectedChildId(saved || kids[0].id);
+      }
+    });
   }, [router]);
 
   function handleChildChange(childId: string) {

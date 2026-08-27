@@ -20,20 +20,21 @@ export default function AssessPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const u = getCurrentUser();
-    if (!u) {
-      router.push("/signin");
-      return;
-    }
-    setUser(u);
-    const kids = getChildren(u.id);
-    setChildren(kids);
-    if (kids.length > 0) {
-      const savedChild = localStorage.getItem("selectedChildId");
-      const child = kids.find((c) => c.id === savedChild) || kids[0];
-      setSelectedChildId(child.id);
-      loadAssessments(child.id);
-    }
+    getCurrentUser().then((u) => {
+      if (!u) {
+        router.push("/signin");
+        return;
+      }
+      setUser(u);
+      const kids = getChildren(u.id);
+      setChildren(kids);
+      if (kids.length > 0) {
+        const savedChild = localStorage.getItem("selectedChildId");
+        const child = kids.find((c) => c.id === savedChild) || kids[0];
+        setSelectedChildId(child.id);
+        loadAssessments(child.id);
+      }
+    });
   }, [router]);
 
   function loadAssessments(childId: string) {

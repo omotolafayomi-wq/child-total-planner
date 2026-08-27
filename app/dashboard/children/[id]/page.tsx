@@ -15,21 +15,22 @@ export default function ChildDetailPage({ params }: { params: { id: string } }) 
   const router = useRouter();
 
   useEffect(() => {
-    const u = getCurrentUser();
-    if (!u) {
-      router.push("/signin");
-      return;
-    }
-    const c = getChild(params.id);
-    if (!c || c.parentId !== u.id) {
-      router.push("/dashboard/children");
-      return;
-    }
-    setChild(c);
-    setAssessments(getAssessments(c.id));
-    setGoals(getGoals(c.id));
-    setEvidence(getEvidence(c.id));
-    setReflections(getReflections(c.id));
+    getCurrentUser().then((u) => {
+      if (!u) {
+        router.push("/signin");
+        return;
+      }
+      const c = getChild(params.id);
+      if (!c || c.parentId !== u.id) {
+        router.push("/dashboard/children");
+        return;
+      }
+      setChild(c);
+      setAssessments(getAssessments(c.id));
+      setGoals(getGoals(c.id));
+      setEvidence(getEvidence(c.id));
+      setReflections(getReflections(c.id));
+    });
   }, [params.id, router]);
 
   if (!child) return null;

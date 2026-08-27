@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
@@ -51,7 +51,11 @@ function ProgressIndicator({ currentStep }: { currentStep: (typeof steps)[number
 
 export default function OnboardingWelcomePage() {
   const router = useRouter();
-  const user = getCurrentUser();
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    getCurrentUser().then(setUser);
+  }, []);
 
   useEffect(() => {
     if (!user) {

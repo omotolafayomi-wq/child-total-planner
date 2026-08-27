@@ -48,20 +48,21 @@ export default function GoalsPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const u = getCurrentUser();
-    if (!u) {
-      router.push("/signin");
-      return;
-    }
-    setUser(u);
-    const kids = getChildren(u.id);
-    setChildren(kids);
-    if (kids.length > 0) {
-      const saved = localStorage.getItem("selectedChildId");
-      const child = kids.find((c) => c.id === saved) || kids[0];
-      setSelectedChildId(child.id);
-      setGoals(getGoals(child.id));
-    }
+    getCurrentUser().then((u) => {
+      if (!u) {
+        router.push("/signin");
+        return;
+      }
+      setUser(u);
+      const kids = getChildren(u.id);
+      setChildren(kids);
+      if (kids.length > 0) {
+        const saved = localStorage.getItem("selectedChildId");
+        const child = kids.find((c) => c.id === saved) || kids[0];
+        setSelectedChildId(child.id);
+        setGoals(getGoals(child.id));
+      }
+    });
   }, [router]);
 
   function handleChildChange(childId: string) {

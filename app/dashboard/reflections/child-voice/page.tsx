@@ -23,20 +23,21 @@ export default function ChildVoicePage() {
   const router = useRouter();
 
   useEffect(() => {
-    const u = getCurrentUser();
-    if (!u) {
-      router.push("/signin");
-      return;
-    }
-    setUser(u);
-    const kids = getChildren(u.id);
-    setChildren(kids);
-    if (kids.length > 0) {
-      const savedChild = localStorage.getItem("selectedChildId");
-      const child = kids.find((c) => c.id === savedChild) || kids[0];
-      setSelectedChildId(child.id);
-      setReflections(getReflections(child.id).filter((r) => r.type === "childVoice"));
-    }
+    getCurrentUser().then((u) => {
+      if (!u) {
+        router.push("/signin");
+        return;
+      }
+      setUser(u);
+      const kids = getChildren(u.id);
+      setChildren(kids);
+      if (kids.length > 0) {
+        const savedChild = localStorage.getItem("selectedChildId");
+        const child = kids.find((c) => c.id === savedChild) || kids[0];
+        setSelectedChildId(child.id);
+        setReflections(getReflections(child.id).filter((r) => r.type === "childVoice"));
+      }
+    });
   }, [router]);
 
   function handleChildChange(childId: string) {

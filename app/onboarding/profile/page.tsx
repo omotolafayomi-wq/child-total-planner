@@ -60,7 +60,7 @@ type ProfileFormData = {
 
 export default function OnboardingProfilePage() {
   const router = useRouter();
-  const user = getCurrentUser();
+  const [user, setUser] = useState<any>(null);
   const existing = user ? getStoreOnboardingState(user.id) : null;
 
   const [form, setForm] = useState<ProfileFormData>({
@@ -74,6 +74,10 @@ export default function OnboardingProfilePage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    getCurrentUser().then(setUser);
+  }, []);
 
   useEffect(() => {
     if (!user) {

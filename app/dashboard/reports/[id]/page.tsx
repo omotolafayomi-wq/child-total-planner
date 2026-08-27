@@ -12,12 +12,13 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
   const router = useRouter();
 
   useEffect(() => {
-    const u = getCurrentUser();
-    if (!u) {
-      router.push("/signin");
-      return;
-    }
-    setUser(u);
+    getCurrentUser().then((u) => {
+      if (!u) {
+        router.push("/signin");
+        return;
+      }
+      setUser(u);
+    });
   }, [router]);
 
   useEffect(() => {

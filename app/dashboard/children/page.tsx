@@ -23,13 +23,14 @@ export default function ChildrenPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const u = getCurrentUser();
-    if (!u) {
-      router.push("/signin");
-      return;
-    }
-    setUser(u);
-    setChildren(getChildren(u.id));
+    getCurrentUser().then((u) => {
+      if (!u) {
+        router.push("/signin");
+        return;
+      }
+      setUser(u);
+      setChildren(getChildren(u.id));
+    });
   }, [router]);
 
   function resetForm() {

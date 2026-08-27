@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { getSession, signOut } from "@/lib/auth";
+import { getCurrentUser, signOut } from "@/lib/auth";
 import { getChildren, getOnboardingState } from "@/lib/store";
 
 const navItems = [
@@ -121,7 +121,19 @@ function TermsIcon() {
 
 function PrivacyIcon() {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 22s8-4-8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+  );
+}
+
+function MenuIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
   );
 }
 
@@ -138,25 +150,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
   const [childSwitcherOpen, setChildSwitcherOpen] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
   useEffect(() => {
-    const sess = getSession();
-    setSession(sess);
-    if (sess) {
-      const kids = getChildren(sess.parentId);
-      setChildrenList(kids);
-      const saved = localStorage.getItem("selectedChildId");
-      if (saved && kids.find((c: any) => c.id === saved)) {
-        setSelectedChildId(saved);
-      } else if (kids.length > 0) {
-        setSelectedChildId(kids[0].id);
-        localStorage.setItem("selectedChildId", kids[0].id);
+    async function loadSession() {
+      const user = await getCurrentUser();
+      setSession(user);
+      if (user) {
+        const kids = getChildren(user.id);
+        setChildrenList(kids);
+        const saved = localStorage.getItem("selectedChildId");
+        if (saved && kids.find((c: any) => c.id === saved)) {
+          setSelectedChildId(saved);
+        } else if (kids.length > 0) {
+          setSelectedChildId(kids[0].id);
+          localStorage.setItem("selectedChildId", kids[0].id);
+        }
       }
+      setAuthChecked(true);
     }
-    setAuthChecked(true);
-  }, [pathname]);
+    loadSession();
+  }, []);
 
   useEffect(() => {
     if (!authChecked) return;
@@ -175,11 +191,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   }, [authChecked, session, pathname, router]);
 
-  const handleSignOut = () => {
-    signOut();
+  const handleSignOut = async () => {
+    await signOut();
     setSession(null);
     setSelectedChildId(null);
     setChildrenList([]);
+    setMobileMenuOpen(false);
     router.push("/");
   };
 
@@ -223,51 +240,62 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-2">
-            {childrenList.length > 0 && (
-              <div className="relative">
-                <button
-                  onClick={() => setChildSwitcherOpen(!childSwitcherOpen)}
-                  className="icon-btn flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium hover:bg-muted"
-                  aria-expanded={childSwitcherOpen}
-                  aria-label="Switch child"
-                >
-                  <span className="truncate max-w-[100px]">
-                    {selectedChild ? selectedChild.name : "Select child"}
-                  </span>
-                  <ChevronDownIcon />
-                </button>
-                {childSwitcherOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setChildSwitcherOpen(false)} />
-                    <div className="absolute right-0 top-full mt-1 z-50 w-56 rounded-lg border border-border bg-white shadow-lg py-1">
-                      {childrenList.map((child) => (
-                        <button
-                          key={child.id}
-                          onClick={() => {
-                            setSelectedChildId(child.id);
-                            localStorage.setItem("selectedChildId", child.id);
-                            setChildSwitcherOpen(false);
-                          }}
-                          className={`w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors ${
-                            selectedChildId === child.id ? "bg-muted font-medium" : ""
-                          }`}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 -mr-2 text-muted-foreground hover:text-foreground"
+              aria-label="Toggle menu"
+              aria-expanded={mobileMenuOpen}
+            >
+              {mobileMenuOpen ? <CloseIcon /> : <MenuIcon />}
+            </button>
+
+            <div className="hidden sm:block">
+              {childrenList.length > 0 && (
+                <div className="relative">
+                  <button
+                    onClick={() => setChildSwitcherOpen(!childSwitcherOpen)}
+                    className="icon-btn flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium hover:bg-muted"
+                    aria-expanded={childSwitcherOpen}
+                    aria-label="Switch child"
+                  >
+                    <span className="truncate max-w-[100px]">
+                      {selectedChild ? selectedChild.name : "Select child"}
+                    </span>
+                    <ChevronDownIcon />
+                  </button>
+                  {childSwitcherOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setChildSwitcherOpen(false)} />
+                      <div className="absolute right-0 top-full mt-1 z-50 w-56 rounded-lg border border-border bg-white shadow-lg py-1">
+                        {childrenList.map((child) => (
+                          <button
+                            key={child.id}
+                            onClick={() => {
+                              setSelectedChildId(child.id);
+                              localStorage.setItem("selectedChildId", child.id);
+                              setChildSwitcherOpen(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors ${
+                              selectedChildId === child.id ? "bg-muted font-medium" : ""
+                            }`}
+                          >
+                            <div className="font-medium">{child.name}</div>
+                            <div className="text-xs text-muted-foreground">Age {child.age} • {child.schoolLevel}</div>
+                          </button>
+                        ))}
+                        <Link
+                          href="/dashboard/children"
+                          className="block px-3 py-2 text-sm text-accent hover:bg-muted transition-colors border-t border-border mt-1"
+                          onClick={() => setChildSwitcherOpen(false)}
                         >
-                          <div className="font-medium">{child.name}</div>
-                          <div className="text-xs text-muted-foreground">Age {child.age} • {child.schoolLevel}</div>
-                        </button>
-                      ))}
-                      <Link
-                        href="/dashboard/children"
-                        className="block px-3 py-2 text-sm text-accent hover:bg-muted transition-colors border-t border-border mt-1"
-                        onClick={() => setChildSwitcherOpen(false)}
-                      >
-                        + Add child
-                      </Link>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
+                          + Add child
+                        </Link>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
 
             <Link
               href="/dashboard"
@@ -290,6 +318,73 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         </div>
+
+        {mobileMenuOpen && (
+          <>
+            <div className="fixed inset-0 z-[55] bg-black/50 md:hidden" onClick={() => setMobileMenuOpen(false)} />
+            <div className="fixed right-0 top-0 bottom-0 w-72 bg-white shadow-xl z-[60] md:hidden overflow-y-auto overscroll-contain">
+              <div className="flex items-center justify-between p-4 border-b border-border">
+                <span className="font-semibold text-lg">Menu</span>
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2 -mr-2 text-muted-foreground hover:text-foreground"
+                  aria-label="Close menu"
+                >
+                  <CloseIcon />
+                </button>
+              </div>
+              <div className="p-4 space-y-1">
+                {childrenList.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Children</p>
+                    {childrenList.map((child) => (
+                      <button
+                        key={child.id}
+                        onClick={() => {
+                          setSelectedChildId(child.id);
+                          localStorage.setItem("selectedChildId", child.id);
+                          setMobileMenuOpen(false);
+                        }}
+                        className={`w-full text-left min-h-[44px] flex items-center px-3 rounded-lg text-sm transition-colors ${
+                          selectedChildId === child.id ? "bg-muted font-medium" : "hover:bg-muted"
+                        }`}
+                      >
+                        <div>
+                          <div className="font-medium">{child.name}</div>
+                          <div className="text-xs text-muted-foreground">Age {child.age} • {child.schoolLevel}</div>
+                        </div>
+                      </button>
+                    ))}
+                    <Link
+                      href="/dashboard/children"
+                      className="block min-h-[44px] flex items-center px-3 text-sm text-accent hover:bg-muted rounded-lg transition-colors mt-1"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      + Add child
+                    </Link>
+                  </div>
+                )}
+                <Link
+                  href="/dashboard"
+                  className="flex items-center gap-3 min-h-[44px] px-3 rounded-lg text-sm font-medium hover:bg-muted transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-xs">
+                    {session.name?.[0]?.toUpperCase() || "P"}
+                  </div>
+                  <span className="truncate">{session.name}</span>
+                </Link>
+                <button
+                  onClick={handleSignOut}
+                  className="w-full flex items-center gap-3 min-h-[44px] px-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                >
+                  <SignOutIcon />
+                  Sign out
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </header>
 
       <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-6 pb-24 md:pb-6">
@@ -313,7 +408,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {selectedChildId && (
         <>
-          <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur border-t border-border no-print" aria-label="Mobile navigation">
+          <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur border-t border-border no-print pb-[env(safe-area-inset-bottom)]" aria-label="Mobile navigation">
             <div className="flex items-center justify-around px-2 py-1.5">
               {visibleNav.map((item) => {
                 const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
@@ -321,7 +416,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex flex-col items-center gap-0.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors min-w-[60px] ${
+                    className={`flex flex-col items-center gap-0.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors min-w-[56px] min-h-[44px] justify-center ${
                       isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
                     }`}
                     aria-label={item.ariaLabel}
@@ -343,7 +438,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <Link
                       key={item.href}
                       href={item.href}
-                      className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                      className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors min-h-[44px] ${
                         isActive
                           ? "bg-primary/10 text-primary"
                           : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -360,7 +455,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="p-3 border-t border-border">
               <button
                 onClick={handleSignOut}
-                className="w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                className="w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors min-h-[44px]"
                 aria-label="Sign out"
               >
                 <SignOutIcon />

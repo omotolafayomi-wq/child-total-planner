@@ -51,12 +51,16 @@ function ProgressIndicator({ currentStep }: { currentStep: (typeof steps)[number
 
 export default function OnboardingPlanPage() {
   const router = useRouter();
-  const user = getCurrentUser();
+  const [user, setUser] = useState<any>(null);
   const existing = user ? getStoreOnboardingState(user.id) : null;
 
   const [planType, setPlanType] = useState<"weekly" | "monthly" | "">("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    getCurrentUser().then(setUser);
+  }, []);
 
   useEffect(() => {
     if (!user) {

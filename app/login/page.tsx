@@ -57,7 +57,11 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/dashboard";
-  const user = getCurrentUser();
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    getCurrentUser().then(setUser);
+  }, []);
 
   useEffect(() => {
     if (user) {

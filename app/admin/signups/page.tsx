@@ -22,19 +22,20 @@ function getParents() {
 
 export default function AdminSignupsPage() {
   const router = useRouter();
-  const [user, setUser] = useState<ReturnType<typeof getCurrentUser>>(null);
+  const [user, setUser] = useState<any>(null);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name" | "email">("newest");
   const [page, setPage] = useState(1);
   const perPage = 20;
 
   useEffect(() => {
-    const u = getCurrentUser();
-    if (!u || !isAdmin(u)) {
-      router.push("/signin");
-      return;
-    }
-    setUser(u);
+    getCurrentUser().then((u) => {
+      if (!u || !isAdmin(u)) {
+        router.push("/signin");
+        return;
+      }
+      setUser(u);
+    });
   }, [router]);
 
   const parents = useMemo(() => {

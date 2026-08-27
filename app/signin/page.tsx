@@ -16,10 +16,11 @@ function SignInForm() {
   const redirectTo = searchParams.get("redirect") || "/dashboard";
 
   useEffect(() => {
-    const u = getCurrentUser();
-    if (u) {
-      router.push(redirectTo);
-    }
+    getCurrentUser().then((u) => {
+      if (u) {
+        router.push(redirectTo);
+      }
+    });
   }, [router, redirectTo]);
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -17,55 +17,54 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 }
 
 export async function signUp(email: string, name: string, password: string) {
-  const existing = getParentByEmail(email);
-  if (existing) {
-    throw new Error("An account with this email already exists.");
+  const response = await fetch("/api/auth/signup", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, name, password }),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || "Signup failed");
   }
-  const passwordHash = await hashPassword(password);
-  const parent = createParent(email, name, passwordHash);
-  const session = createSession(parent.id, parent.email, parent.name);
-  return { parent, session };
+
+  return data;
 }
 
 export async function signIn(email: string, password: string) {
-  const parent = getParentByEmail(email);
-  if (!parent) {
-    throw new Error("Incorrect email or password.");
+  const response = await fetch("/api/auth/signin", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || "Sign in failed");
   }
-  const valid = await verifyPassword(password, parent.passwordHash);
-  if (!valid) {
-    throw new Error("Incorrect email or password.");
-  }
-  const session = createSession(parent.id, parent.email, parent.name);
-  return { parent, session };
+
+  return data;
 }
 
-export function signOut() {
-  const session = getSession();
-  if (session) {
-    deleteSession(session.token);
-  }
+export async function signOut() {
+  await fetch("/api/auth/session", {
+    method: "DELETE",
+  });
 }
 
-export function getCurrentUser() {
-  const session = getSession();
-  if (!session) return null;
-  const parent = getParentByEmail(session.email);
-  if (!parent) return null;
-  return {
-    id: parent.id,
-    email: parent.email,
-    name: parent.name,
-    phone: parent.phone,
-    location: parent.location,
-    planningStyle: parent.planningStyle,
-    emailVerified: parent.emailVerified,
-    role: parent.role,
-  };
+export async function getCurrentUser() {
+  try {
+    const response = await fetch("/api/auth/session");
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.user;
+  } catch {
+    return null;
+  }
 }
 
 export function requireAuth() {
-  const user = getCurrentUser();
+  const user = getSession();
   if (!user) {
     throw new Error("Unauthorized");
   }
@@ -80,6 +79,6 @@ export function resendVerificationEmail(email: string) {
   return resendVerification(email);
 }
 
-export function isAdmin(user: ReturnType<typeof getCurrentUser>) {
+export function isAdmin(user: any) {
   return user?.role === "admin";
 }

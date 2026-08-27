@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
@@ -8,8 +8,12 @@ import { getOnboardingState as getStoreOnboardingState, clearOnboardingState } f
 
 export default function OnboardingCompletePage() {
   const router = useRouter();
-  const user = getCurrentUser();
+  const [user, setUser] = useState<any>(null);
   const existing = user ? getStoreOnboardingState(user.id) : null;
+
+  useEffect(() => {
+    getCurrentUser().then(setUser);
+  }, []);
 
   useEffect(() => {
     if (!user) {
