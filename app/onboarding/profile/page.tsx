@@ -58,6 +58,24 @@ type ProfileFormData = {
   parentPriorities: string;
 };
 
+const formSteps = [
+  {
+    title: "Strengths & Growth",
+    subtitle: "What does your child already do well, and what would you like to see improve?",
+    fields: ["strengths", "areasToDevelop"] as (keyof ProfileFormData)[],
+  },
+  {
+    title: "Interests & Responsibilities",
+    subtitle: "What does your child enjoy, and what do they already handle?",
+    fields: ["interests", "responsibilities"] as (keyof ProfileFormData)[],
+  },
+  {
+    title: "Skills & Family Priorities",
+    subtitle: "What can they do independently, and what matters most to your family?",
+    fields: ["existingSkills", "parentPriorities"] as (keyof ProfileFormData)[],
+  },
+] as const;
+
 export default function OnboardingProfilePage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -74,6 +92,7 @@ export default function OnboardingProfilePage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
     getCurrentUser().then(setUser);
@@ -103,6 +122,27 @@ export default function OnboardingProfilePage() {
 
   function update(field: keyof ProfileFormData, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function validateStep(stepIndex: number): boolean {
+    setError("");
+    if (stepIndex === 0) {
+      if (!form.strengths.trim() && !form.areasToDevelop.trim()) {
+        setError("Please share at least one strength or area to develop.");
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function goNext() {
+    if (validateStep(currentStep)) {
+      setCurrentStep((s) => Math.min(s + 1, formSteps.length - 1));
+    }
+  }
+
+  function goBack() {
+    setCurrentStep((s) => Math.max(s - 1, 0));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -146,11 +186,13 @@ export default function OnboardingProfilePage() {
     );
   }
 
+  const currentStepData = formSteps[currentStep];
+
   return (
     <div className="min-h-screen flex flex-col bg-muted/30">
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-border">
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link href="/dashboard" className="text-lg font-bold text-primary tracking-tight">
+          <Link href="/" className="text-lg font-bold text-primary tracking-tight">
             Total Child
           </Link>
         </div>
@@ -177,39 +219,87 @@ export default function OnboardingProfilePage() {
             </div>
           )}
 
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-lg font-semibold">{currentStepData.title}</h2>
+              <span className="text-sm text-muted-foreground">Step {currentStep + 1} of {formSteps.length}</span>
+            </div>
+            <p className="text-sm text-muted-foreground">{currentStepData.subtitle}</p>
+          </div>
+
           <form onSubmit={handleSubmit} className="card space-y-6">
-            <div>
-              <label className="label" htmlFor="strengths">Current Strengths</label>
-              <textarea id="strengths" className="input min-h-[100px]" placeholder="What does your child already do well?" value={form.strengths} onChange={(e) => update("strengths", e.target.value)} />
-            </div>
-            <div>
-              <label className="label" htmlFor="areasToDevelop">Areas Worth Developing</label>
-              <textarea id="areasToDevelop" className="input min-h-[100px]" placeholder="What would you like your child to improve?" value={form.areasToDevelop} onChange={(e) => update("areasToDevelop", e.target.value)} />
-            </div>
-            <div>
-              <label className="label" htmlFor="interests">Interests</label>
-              <textarea id="interests" className="input min-h-[80px]" placeholder="What does your child enjoy doing?" value={form.interests} onChange={(e) => update("interests", e.target.value)} />
-            </div>
-            <div>
-              <label className="label" htmlFor="responsibilities">Current Responsibilities</label>
-              <textarea id="responsibilities" className="input min-h-[80px]" placeholder="What responsibilities does your child already handle?" value={form.responsibilities} onChange={(e) => update("responsibilities", e.target.value)} />
-            </div>
-            <div>
-              <label className="label" htmlFor="existingSkills">Existing Skills</label>
-              <textarea id="existingSkills" className="input min-h-[80px]" placeholder="What can your child already do independently?" value={form.existingSkills} onChange={(e) => update("existingSkills", e.target.value)} />
-            </div>
-            <div>
-              <label className="label" htmlFor="parentPriorities">Parent Priorities</label>
-              <textarea id="parentPriorities" className="input min-h-[80px]" placeholder="What matters most to your family at this stage?" value={form.parentPriorities} onChange={(e) => update("parentPriorities", e.target.value)} />
-            </div>
+            {currentStepData.fields.map((field) => {
+              if (field === "strengths") {
+                return (
+                  <div key={field}>
+                    <label className="label" htmlFor="strengths">Current Strengths</label>
+                    <textarea id="strengths" className="input min-h-[100px]" placeholder="What does your child already do well?" value={form.strengths} onChange={(e) => update("strengths", e.target.value)} />
+                  </div>
+                );
+              }
+              if (field === "areasToDevelop") {
+                return (
+                  <div key={field}>
+                    <label className="label" htmlFor="areasToDevelop">Areas Worth Developing</label>
+                    <textarea id="areasToDevelop" className="input min-h-[100px]" placeholder="What would you like your child to improve?" value={form.areasToDevelop} onChange={(e) => update("areasToDevelop", e.target.value)} />
+                  </div>
+                );
+              }
+              if (field === "interests") {
+                return (
+                  <div key={field}>
+                    <label className="label" htmlFor="interests">Interests</label>
+                    <textarea id="interests" className="input min-h-[80px]" placeholder="What does your child enjoy doing?" value={form.interests} onChange={(e) => update("interests", e.target.value)} />
+                  </div>
+                );
+              }
+              if (field === "responsibilities") {
+                return (
+                  <div key={field}>
+                    <label className="label" htmlFor="responsibilities">Current Responsibilities</label>
+                    <textarea id="responsibilities" className="input min-h-[80px]" placeholder="What responsibilities does your child already handle?" value={form.responsibilities} onChange={(e) => update("responsibilities", e.target.value)} />
+                  </div>
+                );
+              }
+              if (field === "existingSkills") {
+                return (
+                  <div key={field}>
+                    <label className="label" htmlFor="existingSkills">Existing Skills</label>
+                    <textarea id="existingSkills" className="input min-h-[80px]" placeholder="What can your child already do independently?" value={form.existingSkills} onChange={(e) => update("existingSkills", e.target.value)} />
+                  </div>
+                );
+              }
+              if (field === "parentPriorities") {
+                return (
+                  <div key={field}>
+                    <label className="label" htmlFor="parentPriorities">Parent Priorities</label>
+                    <textarea id="parentPriorities" className="input min-h-[80px]" placeholder="What matters most to your family at this stage?" value={form.parentPriorities} onChange={(e) => update("parentPriorities", e.target.value)} />
+                  </div>
+                );
+              }
+              return null;
+            })}
 
             <div className="flex flex-col sm:flex-row gap-3 pt-4">
-              <button type="submit" className="btn-primary flex-1" disabled={loading}>
-                {loading ? "Saving..." : saved ? "Saved" : "Save & Continue"}
-              </button>
-              <Link href="/dashboard" className="btn-outline text-center">
-                Save & Finish Later
-              </Link>
+              {currentStep > 0 && (
+                <button type="button" onClick={goBack} className="btn-outline flex-1">
+                  Back
+                </button>
+              )}
+              {currentStep < formSteps.length - 1 ? (
+                <button type="button" onClick={goNext} className="btn-primary flex-1">
+                  Next
+                </button>
+              ) : (
+                <>
+                  <button type="submit" className="btn-primary flex-1" disabled={loading}>
+                    {loading ? "Saving..." : saved ? "Saved" : "Save & Continue"}
+                  </button>
+                  <Link href="/dashboard" className="btn-outline text-center">
+                    Save & Finish Later
+                  </Link>
+                </>
+              )}
             </div>
           </form>
         </div>

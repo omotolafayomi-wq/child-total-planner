@@ -72,19 +72,28 @@ function LoginContent() {
   if (user) return null;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
-      <div className="w-full max-w-md">
-        <div className="card">
-          <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold">Welcome</h1>
-            <p className="text-sm text-muted-foreground mt-1">Sign in to continue your development journey</p>
-          </div>
-          <LoginForm redirectTo={redirectTo} />
-          <p className="text-center text-sm text-muted-foreground mt-4">
-            <Link href="/signup" className="text-primary font-medium hover:underline">Create a new account</Link>
-          </p>
+    <div className="min-h-screen flex flex-col bg-muted/30">
+      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-border no-print">
+        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+          <Link href="/" className="text-lg font-bold text-primary tracking-tight">
+            Total Child
+          </Link>
         </div>
-      </div>
+      </header>
+      <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-6">
+        <div className="w-full max-w-md mx-auto">
+          <div className="card">
+            <div className="text-center mb-6">
+              <h1 className="text-2xl font-bold">Welcome</h1>
+              <p className="text-sm text-muted-foreground mt-1">Sign in to continue your development journey</p>
+            </div>
+            <LoginForm redirectTo={redirectTo} />
+            <p className="text-center text-sm text-muted-foreground mt-4">
+              <Link href="/signup" className="text-primary font-medium hover:underline">Create a new account</Link>
+            </p>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
