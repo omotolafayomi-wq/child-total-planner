@@ -77,7 +77,7 @@ export default function PillarPage({ params }: { params: { pillar: string } }) {
       </header>
       
       <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-8">
-        <div className={`rounded-xl border bg-${config.color}-50 p-6 md:p-8 mb-8`}>
+        <div className={`rounded-xl border p-6 md:p-8 mb-8 ${config.color === 'blue' ? 'bg-blue-50 border-blue-200' : config.color === 'emerald' ? 'bg-emerald-50 border-emerald-200' : config.color === 'purple' ? 'bg-purple-50 border-purple-200' : config.color === 'amber' ? 'bg-amber-50 border-amber-200' : 'bg-rose-50 border-rose-200'}`}>
           <div className="flex items-start gap-4">
             <span className="text-4xl">{config.icon}</span>
             <div>

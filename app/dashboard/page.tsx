@@ -188,8 +188,8 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Welcome, {user.name}</h1>
-          <p className="text-muted-foreground">Track your family&apos;s development journey</p>
+          <h1 className="text-2xl font-bold">Welcome back, {user.name}</h1>
+           <p className="text-muted-foreground">Let's keep helping {selectedChild?.name || 'your child'} grow.</p>
         </div>
         {children.length > 0 && (
           <div className="flex items-center gap-2">

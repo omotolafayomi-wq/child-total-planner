@@ -312,6 +312,12 @@ export function getChild(id: string): Child | undefined {
   return children.find((c) => c.id === id);
 }
 
+export function assertChildOwnership(parentId: string, childId: string): boolean {
+  const child = getChild(childId);
+  if (!child) return false;
+  return child.parentId === parentId;
+}
+
 export function createChild(data: Omit<Child, "id" | "createdAt" | "archived">): Child {
   const child: Child = {
     ...data,

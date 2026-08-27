@@ -92,4 +92,53 @@ export function updateServerParent(parentId: string, updates: any) {
   return null;
 }
 
+
+declare global {
+  var serverChildren: any[] | undefined;
+}
+
+function getServerChildren() {
+  if (!global.serverChildren) {
+    global.serverChildren = [];
+  }
+  return global.serverChildren;
+}
+
+export function getServerChild(id: string) {
+  return getServerChildren().find((c: any) => c.id === id);
+}
+
+export function createServerChild(child: any) {
+  const children = getServerChildren();
+  children.push(child);
+  saveToFile();
+  return child;
+}
+
+export function updateServerChild(id: string, updates: any) {
+  const children = getServerChildren();
+  const index = children.findIndex((c: any) => c.id === id);
+  if (index >= 0) {
+    children[index] = { ...children[index], ...updates };
+    saveToFile();
+    return children[index];
+  }
+  return null;
+}
+
+export function deleteServerChild(id: string) {
+  const children = getServerChildren();
+  const index = children.findIndex((c: any) => c.id === id);
+  if (index >= 0) {
+    children.splice(index, 1);
+    saveToFile();
+  }
+}
+
+export function assertChildOwnership(parentId: string, childId: string): boolean {
+  const child = getServerChild(childId);
+  if (!child) return false;
+  return child.parentId === parentId;
+}
+
 loadFromFile();
