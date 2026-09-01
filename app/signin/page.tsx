@@ -2,9 +2,8 @@
 
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { signIn, getCurrentUser } from "@/lib/auth";
-import { getOnboardingState as getStoreOnboardingState } from "@/lib/store";
 
 function SignInForm() {
   const [email, setEmail] = useState("");
@@ -13,9 +12,6 @@ function SignInForm() {
   const [loading, setLoading] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const rawRedirect = searchParams.get("redirect") || "/dashboard";
-  const redirectTo = rawRedirect.startsWith("/") ? rawRedirect : "/dashboard";
 
   useEffect(() => {
     let mounted = true;
@@ -23,14 +19,14 @@ function SignInForm() {
       if (mounted && u) {
         setRedirecting(true);
         setTimeout(() => {
-          router.push(redirectTo);
+          router.push("/dashboard");
         }, 300);
       }
     });
     return () => {
       mounted = false;
     };
-  }, [router, redirectTo]);
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,12 +36,7 @@ function SignInForm() {
       await signIn(email, password);
       setEmail("");
       setPassword("");
-      const onboarding = getStoreOnboardingState();
-      if (onboarding && onboarding.step !== "complete") {
-        router.push(`/onboarding/${onboarding.step}`);
-      } else {
-        router.push(redirectTo);
-      }
+      router.push("/dashboard");
     } catch (err) {
       setError((err as Error)?.message || "Failed to sign in.");
     } finally {
@@ -95,7 +86,7 @@ function SignInForm() {
                 </button>
               </form>
               <p className="text-center text-sm text-muted-foreground mt-4">
-                Don&apos;t have an account? <Link href={`/signup?redirect=${encodeURIComponent(redirectTo)}`} className="text-primary font-medium hover:underline">Sign up</Link>
+                Don&apos;t have an account? <Link href="/signup" className="text-primary font-medium hover:underline">Sign up</Link>
               </p>
               <p className="text-center text-sm text-muted-foreground mt-1">
                 <Link href="/forgot-password" className="text-muted-foreground hover:text-foreground">Forgot password?</Link>

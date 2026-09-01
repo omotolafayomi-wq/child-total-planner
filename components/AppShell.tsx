@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { getCurrentUser, signOut } from "@/lib/auth";
-import { getChildren, getOnboardingState } from "@/lib/store";
+import { getChildren } from "@/lib/store";
 
 const navItems = [
   { href: "/", label: "Home", ariaLabel: "Home", icon: HomeIcon },
@@ -183,11 +183,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (isAuthPage || isLanding || isLegalPage || isOnboarding) return;
     if (!session) {
       router.push("/signin");
-      return;
-    }
-    const onboarding = getOnboardingState();
-    if (onboarding && onboarding.parentId === session.parentId && onboarding.step !== "complete") {
-      router.push(`/onboarding/${onboarding.step}`);
     }
   }, [authChecked, session, pathname, router]);
 

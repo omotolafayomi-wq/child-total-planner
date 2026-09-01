@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { getChildren, getGoals, getPlans, getEvidence, getReflections, getAchievements, getAssessments, PILLARS, DEVELOPMENT_LEVELS, GOAL_STATUSES } from "@/lib/store";
 
@@ -18,6 +18,14 @@ export default function DashboardPage() {
   const [assessments, setAssessments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isNewUser = searchParams.get("welcome") === "1";
+
+  useEffect(() => {
+    if (isNewUser) {
+      router.replace("/dashboard", { scroll: false });
+    }
+  }, [isNewUser, router]);
 
   useEffect(() => {
     let mounted = true;
@@ -208,6 +216,27 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {isNewUser && (
+        <div className="card border-l-4 border-l-primary bg-primary/5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="font-semibold text-primary">Welcome to Total Child!</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Get started by adding your child and building their development profile.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Link href="/onboarding/child" className="btn-primary whitespace-nowrap">
+                Add Your Child
+              </Link>
+              <Link href="/dashboard/activities" className="btn-outline whitespace-nowrap">
+                Explore First
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {!selectedChild ? (
         <div className="card text-center py-8 sm:py-12">
