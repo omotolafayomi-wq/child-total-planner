@@ -45,7 +45,7 @@ export default function PrivacyPage() {
 
         <section className="border-t border-border bg-white">
           <div className="max-w-3xl mx-auto px-4 py-12 md:py-16 text-center">
-            <Link href="/" className="btn-outline inline-flex items-center gap-2">
+            <Link href="/dashboard" className="btn-outline inline-flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
                 <path d="M15 18l-6-6 6-6" />
               </svg>

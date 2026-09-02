@@ -44,7 +44,7 @@ export default function OnboardingCompletePage() {
     <div className="min-h-screen flex flex-col bg-muted/30">
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-border">
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link href="/dashboard" className="text-lg font-bold text-primary tracking-tight">
+          <Link href="/" className="text-lg font-bold text-primary tracking-tight">
             Total Child
           </Link>
         </div>
@@ -65,7 +65,7 @@ export default function OnboardingCompletePage() {
             You can now explore activities, set goals, build plans and track growth. We&apos;ll guide you at every step.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/dashboard" className="btn-primary text-base px-8 py-3">
+            <Link href="/" className="btn-primary text-base px-8 py-3">
               Go to Dashboard
             </Link>
             <Link href="/dashboard/activities" className="btn-outline text-base px-8 py-3">

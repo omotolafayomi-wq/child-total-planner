@@ -191,7 +191,7 @@ export default function OnboardingProfilePage() {
     <div className="min-h-screen flex flex-col bg-muted/30">
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-border">
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link href="/dashboard" className="text-lg font-bold text-primary tracking-tight">
+          <Link href="/" className="text-lg font-bold text-primary tracking-tight">
             Total Child
           </Link>
         </div>
@@ -306,7 +306,7 @@ export default function OnboardingProfilePage() {
                   <button type="submit" className="btn-primary flex-1" disabled={loading}>
                     {loading ? "Saving..." : saved ? "Saved" : "Save & Continue"}
                   </button>
-                  <Link href="/dashboard" className="btn-outline text-center">
+                  <Link href="/" className="btn-outline text-center">
                     Save & Finish Later
                   </Link>
                 </>

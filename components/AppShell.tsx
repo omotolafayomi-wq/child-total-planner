@@ -217,7 +217,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <header className={`sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-border no-print transition-transform duration-300 ${navCollapsed ? "-translate-y-full" : "translate-y-0"}`}>
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2">
               <span className="text-lg font-bold text-primary tracking-tight">Total Child</span>
             </Link>
           </div>
