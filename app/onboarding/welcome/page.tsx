@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
-import { getChildren, getOnboardingState as getStoreOnboardingState, saveOnboardingState as saveStoreOnboardingState } from "@/lib/store";
+import { signUp, getCurrentUser } from "@/lib/auth";
+import { getOnboardingState as getStoreOnboardingState, saveOnboardingState as saveStoreOnboardingState, getChildren } from "@/lib/store";
 
 const steps = [
   { key: "welcome", label: "Welcome" },
@@ -45,46 +45,67 @@ function ProgressIndicator({ currentStep }: { currentStep: (typeof steps)[number
 
 export default function OnboardingWelcomePage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [created, setCreated] = useState(false);
 
   useEffect(() => {
-    getCurrentUser().then(setUser);
-  }, []);
+    getCurrentUser().then((u) => {
+      if (u) {
+        const kids = getChildren(u.id);
+        if (kids.length > 0) {
+          router.push("/dashboard");
+        } else {
+          const existing = getStoreOnboardingState(u.id);
+          if (existing && existing.step !== "welcome") {
+            router.push(`/onboarding/${existing.step}`);
+          }
+        }
+      }
+    });
+  }, [router]);
 
-  useEffect(() => {
-    if (!user) {
-      router.push("/");
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    if (!name.trim() || !email.trim() || !password) {
+      setError("Please fill in all fields.");
       return;
     }
-    const kids = getChildren(user.id);
-    if (kids.length > 0) {
-      router.push("/dashboard");
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
       return;
     }
-    const existing = getStoreOnboardingState(user.id);
-    if (existing && existing.step !== "welcome") {
-      router.push(`/onboarding/${existing.step}`);
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
       return;
     }
-    const state = {
-      step: "welcome" as const,
-      parentId: user.id,
-      startedAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    saveStoreOnboardingState(state);
-  }, [user, router]);
-
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-muted/30">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    );
-  }
-
-  const existing = getStoreOnboardingState(user.id);
-  const childName = existing?.childData?.name;
+    setLoading(true);
+    try {
+      const result = await signUp(email, name, password);
+      if (result.user) {
+        const state = {
+          step: "welcome" as const,
+          parentId: result.user.id,
+          startedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        saveStoreOnboardingState(state);
+        setCreated(true);
+        setTimeout(() => {
+          router.push("/onboarding/child");
+        }, 600);
+      }
+    } catch (err) {
+      setError((err as Error)?.message || "Failed to create account. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-muted/30">
@@ -97,46 +118,53 @@ export default function OnboardingWelcomePage() {
       </header>
       <main className="flex-1 w-full max-w-3xl mx-auto px-4 py-8">
         <ProgressIndicator currentStep="welcome" />
-        <div className="max-w-xl mx-auto text-center">
-          <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
-            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
+        <div className="max-w-xl mx-auto">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl md:text-4xl font-bold mb-4">Welcome to Total Child Development Planner</h1>
+            <p className="text-lg text-muted-foreground leading-relaxed mb-4">
+              Welcome. Let&apos;s build a practical development journey around your child — one realistic goal, meaningful activity and useful experience at a time.
+            </p>
+            <p className="text-muted-foreground mb-8">
+              You do not need to plan everything at once. We&apos;ll help you understand your child&apos;s current capabilities, identify priorities and build a realistic path forward.
+            </p>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">Welcome to Total Child Development Planner</h1>
-          <p className="text-lg text-muted-foreground leading-relaxed mb-4">
-            Welcome. Let&apos;s build a practical development journey around your child — one realistic goal, meaningful activity and useful experience at a time.
-          </p>
-          <p className="text-muted-foreground mb-8">
-            You do not need to plan everything at once. We&apos;ll help you understand your child&apos;s current capabilities, identify priorities and build a realistic path forward.
-          </p>
 
-          {childName && (
-            <div className="mb-6 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-primary">
-              <p className="font-medium mb-2">Welcome back. You were creating a development profile for {childName}.</p>
-              <Link href="/onboarding/child" className="btn-primary text-sm px-4 py-2">
-                Continue
-              </Link>
-            </div>
-          )}
-
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/onboarding/child" className="btn-primary text-base px-8 py-3">
-              Add My Child
-            </Link>
-            <Link href="/dashboard" className="btn-outline text-base px-8 py-3">
-              Explore First
-            </Link>
-            <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-foreground px-4 py-3">
-              Skip for Now
-            </Link>
+          <div className="card">
+            <h2 className="text-xl font-semibold mb-4">Create Your Account</h2>
+            {error && (
+              <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                {error}
+              </div>
+            )}
+            {created && (
+              <div className="mb-4 rounded-lg border border-growth-200 bg-growth-50 px-4 py-3 text-sm text-growth-800">
+                Account created. Starting onboarding...
+              </div>
+            )}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="label" htmlFor="parentName">Your Full Name</label>
+                <input id="parentName" type="text" className="input" value={name} onChange={(e) => setName(e.target.value)} required />
+              </div>
+              <div>
+                <label className="label" htmlFor="parentEmail">Email Address</label>
+                <input id="parentEmail" type="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              </div>
+              <div>
+                <label className="label" htmlFor="parentPassword">Password</label>
+                <input id="parentPassword" type="password" className="input" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
+              </div>
+              <div>
+                <label className="label" htmlFor="confirmPassword">Confirm Password</label>
+                <input id="confirmPassword" type="password" className="input" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={6} />
+              </div>
+              <button type="submit" className="btn-primary w-full" disabled={loading || created}>
+                {loading ? "Creating account..." : created ? "Created" : "Add My Child"}
+              </button>
+            </form>
           </div>
         </div>
       </main>
     </div>
   );
 }
-

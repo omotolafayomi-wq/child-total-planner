@@ -1,175 +1,121 @@
-# Auth Modal, Landing Page Refresh, Onboarding Email, PDF Reports, and Brand Assets
+# Public Onboarding Flow: Remove Auth Modal, Collect Credentials at Onboarding Start
 
 ## Goal
-1. Remove standalone sign-in/sign-up/login pages and replace with an auth modal on the landing page
-2. Link "Start My Child's Development Plan" CTA to the onboarding dashboard
-3. Add email field to onboarding profile (manual entry)
-4. Add a relatable mobile-friendly image with brand text/logo to the landing page
-5. Add a favicon
-6. Enable PDF download/printing of reports with full biodata
+1. Remove AuthModal completely
+2. Make onboarding fully public — no authentication required to start
+3. Collect parent email/password at `/onboarding/welcome` and create account immediately
+4. New user flow: `/onboarding/welcome` → child → profile → plan → complete → `/dashboard`
+5. Returning users: go directly to `/dashboard`
+6. Pillar icons on landing page → `/dashboard`
 
 ## Design Decisions (Resolved)
-- **Auth**: Modal on landing page replaces `/signin`, `/signup`, `/login`. `/forgot-password` remains standalone.
-- **Brand assets**: Text-based brand mark ("Total Child") + stock family photo from Unsplash. No external logo files.
-- **PDF**: Client-side using `jspdf` + `jspdf-autotable`.
-- **Onboarding email**: Manual entry field in profile step.
+- **Auth timing**: Account created at onboarding start (`/onboarding/welcome` collects email/password)
+- **Public onboarding**: No `getCurrentUser()` checks in onboarding pages
+- **No auth modal**: Landing page CTA goes directly to `/onboarding/welcome`
+- **Returning users**: Landing page detects session; if exists → `/dashboard`
 
 ## Tasks
 
-### 1. Remove standalone auth pages
-Delete:
-- `app/signin/page.tsx`
-- `app/signup/page.tsx`
-- `app/login/page.tsx`
+### 1. Update `app/onboarding/welcome/page.tsx` — Add account creation
 
-Keep `app/forgot-password/page.tsx` (linked from auth modal).
+**Current state**: Checks for user, redirects to `/signin` if not authenticated.
 
-### 2. Create auth modal component
-Create `components/AuthModal.tsx`:
-- Controlled modal with `isOpen` prop and `onClose` callback
-- Tabs: "Sign In" | "Sign Up"
-- Fields: email, password, name (sign-up only)
-- Validation: required fields, email format, password min 6 chars
-- Uses `signIn` and `signUp` from `@/lib/auth`
-- On success:
-  - New user: `router.push("/onboarding/welcome")`
-  - Returning user: `router.push("/dashboard")`
-- "Forgot password?" link → `/forgot-password`
-- Close via X button, overlay click, or Escape key
+**Changes needed**:
+- Remove `getCurrentUser()` auth check
+- Add email and password fields to the welcome step
+- On "Add My Child" button click:
+  1. Validate email and password
+  2. Call `signUp(email, name, password)` to create account
+  3. Save onboarding state with new parentId
+  4. Redirect to `/onboarding/child`
+- If user refreshes page and onboarding state exists with a valid session, continue from current step
+- Store name from form (not just child name)
 
-### 3. Update landing page (`app/page.tsx`)
-The landing page is currently a **server component** using `getSession()`. To add an auth modal, convert it to a **client component** or use a hybrid approach:
+**New form fields on welcome page**:
+- Parent full name
+- Email address
+- Password (min 6 chars)
+- Keep existing "Add My Child" and "Explore First" buttons
 
-**Option A (recommended)**: Convert `app/page.tsx` to a client component:
-- Move `getSession()` call into `useEffect`
-- Add `useState` for session and auth modal open state
-- Add "Sign In" / "Start My Child's Development Plan" buttons
-- Replace `FamilyIllustration` SVG with a mobile-friendly image:
+### 2. Remove auth guards from all onboarding pages
 
-```tsx
-<div className="relative w-full max-w-4xl mx-auto mb-8">
-  <img
-    src="https://images.unsplash.com/photo-1511895426328-dc8714191300?w=1200&h=600&fit=crop"
-    alt="Family working together"
-    className="w-full h-64 sm:h-96 object-cover rounded-2xl shadow-lg"
-    loading="eager"
-  />
-  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent rounded-2xl" />
-  <div className="absolute bottom-6 left-6 right-6 text-white">
-    <h2 className="text-2xl sm:text-3xl font-bold mb-2">Total Child</h2>
-    <p className="text-sm sm:text-base text-white/90">Raise a child who can learn, live, lead, earn and serve.</p>
-  </div>
-</div>
-```
+Update these pages to remove `getCurrentUser()` checks and `/signin` redirects:
+- `app/onboarding/welcome/page.tsx` — handled above
+- `app/onboarding/child/page.tsx` — remove `router.push("/signin")`
+- `app/onboarding/profile/page.tsx` — remove `router.push("/")`
+- `app/onboarding/plan/page.tsx` — remove `router.push("/signin")`
+- `app/onboarding/complete/page.tsx` — remove `router.push("/signin")`
 
-**Button logic**:
-```tsx
-const handleStartClick = () => {
-  if (!session) {
-    setAuthModalOpen(true);
-  } else {
-    const kids = getChildren(session.id);
-    if (kids.length === 0) {
-      router.push("/onboarding/welcome");
-    } else {
-      router.push("/dashboard");
-    }
-  }
-};
-```
+Each page should:
+- Load onboarding state from localStorage
+- If no onboarding state exists, redirect to `/onboarding/welcome`
+- If onboarding state exists but no session, use the stored parentId for data operations
+- Continue the flow without requiring authentication
 
-### 4. Add favicon
-- Create `public/favicon.ico` (16x16, 32x32) — placeholder or text-based generated file
-- Create `public/apple-touch-icon.png` (180x180) — placeholder
-- Update `app/layout.tsx` metadata:
-```tsx
-export const metadata: Metadata = {
-  title: "Total Child Development Planner",
-  description: "...",
-  icons: {
-    icon: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
-  },
-};
-```
+### 3. Update `components/AppShell.tsx` — Allow public onboarding access
 
-### 5. Add email field to onboarding profile
-Update `app/onboarding/profile/page.tsx`:
-- Add `email` field to `ProfileFormData` type
-- Add email input in Step 1 ("Strengths & Growth") or as a new Step 0
-- Validation: required, email format
-- No auto-fill from auth (manual entry per design decision)
+**Current state**: AppShell redirects unauthenticated users away from `/onboarding` pages.
 
-### 6. Implement PDF report generation
-Update `app/dashboard/reports/[id]/page.tsx`:
-- Add `jspdf` and `jspdf-autotable` imports (dynamic import to avoid SSR issues)
-- Add "Download PDF" button alongside "Print / Save PDF"
-- PDF content:
-  - Header: "Total Child Development Report"
-  - Parent biodata: name, email
-  - For each child:
-    - Name, age, school level
-    - Pillar overview table
-    - Goals achieved / in progress
-    - Evidence highlights
-    - Child voice excerpts
-    - Parent review key points
-    - Next steps
-- Use `jspdf-autotable` for tabular data
-- Include page numbers and branding footer
+**Changes needed**:
+- Keep the auth guard for dashboard pages
+- Allow `/onboarding` pages to render without session
+- The onboarding pages themselves will handle state management
 
-### 7. Update redirects across the app
-Search for and update all references to old auth routes:
-- `app/components/AppShell.tsx`: Change redirect from `/signin` to `/`
-- `app/dashboard/reports/[id]/page.tsx`: Change redirect from `/signin` to `/`
-- Any other pages with `/signin`, `/signup`, `/login` redirects → change to `/`
+### 4. Update `app/page.tsx` — Remove auth modal, simplify CTAs
 
-### 8. Update AppShell auth guards
-In `components/AppShell.tsx`:
-- Change unauthenticated redirect from `/signin` to `/`
-- This ensures unauthenticated users land on the landing page with auth modal
+**Changes needed**:
+- Remove `AuthModal` component and all related state (`authModalOpen`, `authModalTab`)
+- Remove `useRouter` import if no longer needed
+- "Start My Child's Development Plan" button → always goes to `/onboarding/welcome`
+- Pillar icon buttons → go to `/dashboard` (requires auth, AppShell will handle redirect)
+- Remove conditional rendering based on `session`
+- Keep the image, brand text, and all other landing page content
 
-## Files to Create
-- `components/AuthModal.tsx`
-- `public/favicon.ico` (placeholder)
-- `public/apple-touch-icon.png` (placeholder)
+### 5. Update redirect targets across the app
+
+Since `/signin`, `/signup`, `/login` are deleted, ensure no remaining references exist:
+- Search for any `router.push("/signin")`, `router.push("/signup")`, `router.push("/login")`
+- Replace with appropriate redirects (`/` or `/onboarding/welcome`)
+
+### 6. Update onboarding state management
+
+The onboarding state currently stores `parentId`. After public onboarding:
+- When account is created at `/onboarding/welcome`, store the new parentId in onboarding state
+- Subsequent onboarding pages use this parentId for `createChild`, `saveOnboardingState`, etc.
+- On completion, the user has a valid session and can access `/dashboard`
 
 ## Files to Modify
-- `app/page.tsx` (landing page — convert to client component, add image, auth modal triggers)
-- `app/onboarding/profile/page.tsx` (add email field)
-- `app/dashboard/reports/[id]/page.tsx` (add PDF download)
-- `app/layout.tsx` (add favicon metadata)
-- `components/AppShell.tsx` (update auth guard redirect)
+- `app/onboarding/welcome/page.tsx` — add account creation form
+- `app/onboarding/child/page.tsx` — remove auth guard
+- `app/onboarding/profile/page.tsx` — remove auth guard
+- `app/onboarding/plan/page.tsx` — remove auth guard
+- `app/onboarding/complete/page.tsx` — remove auth guard
+- `app/page.tsx` — remove AuthModal, simplify CTAs
+- `components/AppShell.tsx` — allow public onboarding
+- Any other pages with old auth redirects
 
 ## Files to Delete
-- `app/signin/page.tsx`
-- `app/signup/page.tsx`
-- `app/login/page.tsx`
+- `components/AuthModal.tsx`
 
-## Dependencies to Add
-```json
-{
-  "jspdf": "^2.5.1",
-  "jspdf-autotable": "^3.8.2"
-}
-```
+## Dependencies
+- No new dependencies required
 
 ## Validation Plan
 1. Run `npm run build` — must pass with no TypeScript errors
-2. Verify no references to deleted auth pages remain (`grep -r "/signin" app/`)
-3. Manual test:
-   - Visit `/` as unauthenticated user → see landing page with photo, brand text, auth modal triggers
-   - Click "Start My Child's Development Plan" → auth modal opens
-   - Sign up in modal → redirects to `/onboarding/welcome`
-   - Complete onboarding → reaches `/dashboard`
+2. Manual test flow:
+   - Visit `/` as unauthenticated user → see landing page with photo, brand text, CTA button
+   - Click "Start My Child's Development Plan" → go to `/onboarding/welcome`
+   - Fill in parent name, email, password → click "Add My Child" → account created → redirect to `/onboarding/child`
+   - Complete child form → `/onboarding/profile`
+   - Complete profile form → `/onboarding/plan`
+   - Complete plan → `/onboarding/complete`
+   - Auto-redirect to `/dashboard` → see dashboard with new child
    - Sign out → back to landing page
-   - Click "Sign In" → auth modal opens
-   - Sign in as returning user → redirects to `/dashboard`
-   - Generate a report → "Download PDF" button produces formatted PDF with parent and child biodata
+   - Click pillar icons → redirect to `/dashboard` (requires sign in)
+   - Sign in with created account → go to `/dashboard`
 
 ## Out of Scope
-- Designing/creating actual brand logo assets (using placeholders)
-- Advanced PDF styling (basic formatting only)
 - Password reset flow improvements
 - Social auth (Google, Apple, etc.)
-- Removing `/forgot-password` page
+- Remembering partially completed onboarding across sessions
+- Email verification

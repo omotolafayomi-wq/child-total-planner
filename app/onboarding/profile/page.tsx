@@ -102,7 +102,10 @@ export default function OnboardingProfilePage() {
 
   useEffect(() => {
     if (!user) {
-      router.push("/");
+      const existing = getStoreOnboardingState();
+      if (!existing) {
+        router.push("/onboarding/welcome");
+      }
       return;
     }
     if (!existing?.childId) {

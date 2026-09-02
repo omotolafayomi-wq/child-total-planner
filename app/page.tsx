@@ -2,10 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { getSession } from "@/lib/auth";
-import { getChildren } from "@/lib/store";
 import { useRouter } from "next/navigation";
-import AuthModal from "@/components/AuthModal";
 
 function ChildrenIcon() {
   return (
@@ -56,14 +53,7 @@ function WhatsAppIcon() {
 }
 
 export default function Home() {
-  const [session, setSession] = useState<any>(null);
-  const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [authModalTab, setAuthModalTab] = useState<"signin" | "signup">("signin");
   const router = useRouter();
-
-  useEffect(() => {
-    setSession(getSession());
-  }, []);
 
   const pillars = [
     {
@@ -118,34 +108,6 @@ export default function Home() {
     },
   ];
 
-  const handleStartClick = () => {
-    if (!session) {
-      setAuthModalTab("signup");
-      setAuthModalOpen(true);
-      return;
-    }
-    const kids = getChildren(session.id);
-    if (kids.length === 0) {
-      router.push("/onboarding/welcome");
-    } else {
-      router.push("/dashboard");
-    }
-  };
-
-  const handleSignInClick = () => {
-    setAuthModalTab("signin");
-    setAuthModalOpen(true);
-  };
-
-  const handlePillarClick = (slug: string) => {
-    if (!session) {
-      setAuthModalTab("signin");
-      setAuthModalOpen(true);
-      return;
-    }
-    router.push(`/${slug}`);
-  };
-
   return (
     <div className="flex flex-col flex-1">
       <main className="flex-1 w-full">
@@ -185,14 +147,9 @@ export default function Home() {
                 A practical family development platform that helps parents turn everyday life into purposeful growth — not just exam preparation.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <button onClick={handleStartClick} className="btn-accent text-base px-8 py-3">
-                  {session ? "Go to Dashboard" : "Start My Child's Development Plan"}
+                <button onClick={() => router.push("/onboarding/welcome")} className="btn-accent text-base px-8 py-3">
+                  Start My Child&apos;s Development Plan
                 </button>
-                {!session && (
-                  <button onClick={handleSignInClick} className="btn-outline text-base px-8 py-3 border-white/30 text-white hover:bg-white/10">
-                    Sign In
-                  </button>
-                )}
               </div>
             </div>
           </div>
@@ -208,7 +165,7 @@ export default function Home() {
               {pillars.map((pillar) => (
                 <button
                   key={pillar.slug}
-                  onClick={() => handlePillarClick(pillar.slug)}
+                  onClick={() => router.push(`/dashboard`)}
                   className={`card-interactive rounded-xl border ${pillar.color} p-6 text-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent text-left`}
                 >
                   <div className="flex justify-center mb-4">
@@ -262,8 +219,8 @@ export default function Home() {
             <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
               Every child deserves a development plan that is practical, balanced and personal.
             </p>
-            <button onClick={handleStartClick} className="btn-primary text-base px-8 py-3">
-              {session ? "Go to Dashboard" : "Create Free Account"}
+            <button onClick={() => router.push("/onboarding/welcome")} className="btn-primary text-base px-8 py-3">
+              Start My Child&apos;s Development Plan
             </button>
             <p className="text-xs text-muted-foreground mt-4">
               No credit card required. Your family&apos;s data stays private.
@@ -336,9 +293,6 @@ export default function Home() {
           </div>
         </footer>
       </main>
-
-      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} initialTab={authModalTab} />
     </div>
   );
 }
-
