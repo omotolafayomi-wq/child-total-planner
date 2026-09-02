@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { getCurrentUser, signOut } from "@/lib/auth";
 import { getChildren } from "@/lib/store";
+import ChildFormModal from "./ChildFormModal";
 
 const navItems = [
   { href: "/", label: "Home", ariaLabel: "Home", icon: HomeIcon },
@@ -151,6 +152,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [childSwitcherOpen, setChildSwitcherOpen] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showChildModal, setShowChildModal] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -190,7 +192,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (!session) return;
     const isDashboard = pathname === "/dashboard" || pathname.startsWith("/dashboard/");
     if (!isDashboard) return;
-    const kids = getChildren(session.parentId);
+    const kids = getChildren(session.id);
     setChildrenList(kids);
     if (kids.length > 0 && !selectedChildId) {
       const saved = localStorage.getItem("selectedChildId");
@@ -401,7 +403,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           children
         ) : (
           <div className="flex flex-col items-center justify-center py-8 sm:py-20 text-center">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
               <ChildrenIcon />
             </div>
             <h1 className="text-2xl font-bold mb-2">Welcome to Total Child</h1>
@@ -409,16 +411,34 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               Add your first child to begin their development journey across LEARN, LIVE, LEAD, EARN and SERVE.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center px-4 w-full max-w-md">
-              <Link href="/onboarding/child" className="btn-primary w-full sm:w-auto">
-                Add Your First Child
-              </Link>
-              <Link href="/dashboard/activities" className="btn-outline w-full sm:w-auto">
-                Explore Activities
+              <button onClick={() => setShowChildModal(true)} className="btn-primary w-full sm:w-auto">
+                Add your child
+              </button>
+              <Link href="/activities" className="btn-outline w-full sm:w-auto">
+                Explore Activity
               </Link>
             </div>
           </div>
         )}
       </main>
+
+      {showChildModal && (
+        <ChildFormModal
+          parentId={session?.id || ""}
+          onClose={() => setShowChildModal(false)}
+          onSave={(child) => {
+            setShowChildModal(false);
+            if (session) {
+              const kids = getChildren(session.id);
+              setChildrenList(kids);
+              if (kids.length > 0) {
+                setSelectedChildId(kids[0].id);
+                localStorage.setItem("selectedChildId", kids[0].id);
+              }
+            }
+          }}
+        />
+      )}
 
       {selectedChildId && (
         <>
