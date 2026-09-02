@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
+import { getOnboardingState } from "@/lib/store";
 import { getChildren, getEvidence, PILLARS } from "@/lib/store";
 
 const PORTFOLIO_SECTIONS = [
@@ -31,13 +31,13 @@ export default function PortfolioPage() {
   const router = useRouter();
 
   useEffect(() => {
-    getCurrentUser().then((u) => {
-      if (!u) {
-        router.push("/");
+    const onboarding = getOnboardingState();
+      if (!onboarding) {
+        router.replace("/onboarding/welcome");
         return;
       }
-      setUser(u);
-      const kids = getChildren(u.id);
+      setUser({ id: onboarding.parentId });
+      const kids = getChildren(onboarding.parentId);
       setChildren(kids);
       if (kids.length > 0) {
         const saved = localStorage.getItem("selectedChildId");
@@ -45,7 +45,6 @@ export default function PortfolioPage() {
         setSelectedChildId(child.id);
         setEvidence(getEvidence(child.id));
       }
-    });
   }, [router]);
 
   function handleChildChange(childId: string) {

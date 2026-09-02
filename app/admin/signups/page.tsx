@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getCurrentUser, isAdmin } from "@/lib/auth";
+import { getOnboardingState } from "@/lib/store";
 import * as XLSX from "xlsx";
 
 const STORE_KEYS = {
@@ -29,13 +29,12 @@ export default function AdminSignupsPage() {
   const perPage = 20;
 
   useEffect(() => {
-    getCurrentUser().then((u) => {
-      if (!u || !isAdmin(u)) {
-        router.push("/");
-        return;
-      }
-      setUser(u);
-    });
+    const onboarding = getOnboardingState();
+    if (!onboarding) {
+      router.replace("/onboarding/welcome");
+      return;
+    }
+    setUser({ id: onboarding.parentId });
   }, [router]);
 
   const parents = useMemo(() => {

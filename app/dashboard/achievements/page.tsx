@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
+import { getOnboardingState } from "@/lib/store";
 import { getChildren, getAchievements, createAchievement } from "@/lib/store";
 
 const BADGES = [
@@ -27,21 +27,20 @@ export default function AchievementsPage() {
   const router = useRouter();
 
   useEffect(() => {
-    getCurrentUser().then((u) => {
-      if (!u) {
-        router.push("/");
+    const onboarding = getOnboardingState();
+      if (!onboarding) {
+        router.replace("/onboarding/welcome");
         return;
       }
-      setUser(u);
-      const kids = getChildren(u.id);
+      setUser({ id: onboarding.parentId });
+      const kids = getChildren(onboarding.parentId);
       setChildren(kids);
       if (kids.length > 0) {
         const saved = localStorage.getItem("selectedChildId");
         const child = kids.find((c) => c.id === saved) || kids[0];
-        setSelectedChildId(child.id);
-        setAchievements(getAchievements(child.id));
-      }
-    });
+         setSelectedChildId(child.id);
+         setAchievements(getAchievements(child.id));
+       }
   }, [router]);
 
   function handleChildChange(childId: string) {

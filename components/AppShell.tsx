@@ -8,7 +8,7 @@ import { getOnboardingState as getStoreOnboardingState } from "@/lib/store";
 import ChildFormModal from "./ChildFormModal";
 
 const navItems = [
-  { href: "/", label: "Home", ariaLabel: "Home", icon: HomeIcon },
+  { href: "/dashboard", label: "Home", ariaLabel: "Dashboard", icon: HomeIcon },
   { href: "/dashboard/children", label: "Children", ariaLabel: "My Children", icon: ChildrenIcon },
   { href: "/dashboard/assess", label: "Assess", ariaLabel: "Assess Development", icon: AssessIcon },
   { href: "/dashboard/goals", label: "Goals", ariaLabel: "Development Goals", icon: GoalsIcon },
@@ -191,7 +191,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     setSelectedChildId(null);
     setChildrenList([]);
     setMobileMenuOpen(false);
-    router.push("/");
+    router.push("/onboarding/welcome");
   };
 
   const selectedChild = childrenList.find((c) => c.id === selectedChildId);
@@ -206,8 +206,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   const visibleNav = navItems.filter((item) => {
-    if (item.href === "/" || item.href === "/dashboard/children") return true;
-    if (!selectedChildId) return item.href === "/dashboard/children";
+    if (!selectedChildId) {
+      return ["/dashboard/children", "/dashboard/assess", "/dashboard/activities"].includes(item.href);
+    }
     return true;
   });
 
@@ -216,7 +217,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <header className={`sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-border no-print transition-transform duration-300 ${navCollapsed ? "-translate-y-full" : "translate-y-0"}`}>
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2">
+            <Link href="/dashboard" className="flex items-center gap-2">
               <span className="text-lg font-bold text-primary tracking-tight">Total Child</span>
             </Link>
           </div>
@@ -482,6 +483,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               Total Child Development Planner — Built for Nigerian and African families.
             </p>
             <p className="text-xs text-muted-foreground mt-1">LEARN • LIVE • LEAD • EARN • SERVE</p>
+            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2 border border-border mt-4 mx-auto max-w-md">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <span>Your data stays on this device. Nothing is uploaded or shared.</span>
+            </div>
           </div>
         </div>
       </footer>

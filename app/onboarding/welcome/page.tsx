@@ -78,11 +78,11 @@ export default function OnboardingWelcomePage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [agreed, setAgreed] = useState(false);
 
-  useEffect(() => {
-    const existing = getStoreOnboardingState();
-    if (existing && existing.step !== "welcome") {
-      router.push(`/onboarding/${existing.step}`);
-    }
+   useEffect(() => {
+     const existing = getStoreOnboardingState();
+     if (existing && existing.step !== "welcome") {
+       router.push(`/onboarding/${existing.step}`);
+     }
   }, [router]);
 
   function update(field: keyof BiodataFormData, value: string) {
@@ -151,7 +151,7 @@ export default function OnboardingWelcomePage() {
     <div className="min-h-screen flex flex-col bg-muted/30">
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-border">
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link href="/" className="text-lg font-bold text-primary tracking-tight">
+          <Link href="/dashboard" className="text-lg font-bold text-primary tracking-tight">
             Total Child
           </Link>
         </div>
@@ -164,9 +164,13 @@ export default function OnboardingWelcomePage() {
             <p className="text-lg text-muted-foreground leading-relaxed mb-4">
               Let&apos;s build a practical development journey around your child — one realistic goal, meaningful activity and useful experience at a time.
             </p>
-            <p className="text-muted-foreground mb-8">
+            <p className="text-muted-foreground mb-4">
               You do not need to plan everything at once. We&apos;ll help you understand your child&apos;s current capabilities, identify priorities and build a realistic path forward.
             </p>
+            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2 border border-border mb-6">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <span>Your data stays on this device. Nothing is uploaded or shared.</span>
+            </div>
           </div>
 
           {saved && (

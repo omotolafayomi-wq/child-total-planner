@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
+import { getOnboardingState } from "@/lib/store";
 import { updateParent, getParentByEmail } from "@/lib/store";
 import { hashPassword } from "@/lib/auth";
 
@@ -16,19 +16,19 @@ export default function ProfilePage() {
   const router = useRouter();
 
   useEffect(() => {
-    getCurrentUser().then((u) => {
-      if (!u) {
-        router.push("/");
+    const onboarding = getOnboardingState();
+      if (!onboarding) {
+        router.replace("/onboarding/welcome");
         return;
       }
-      setUser(u);
+      setUser({ id: onboarding.parentId });
+      const biodata = (onboarding as any).biodata || {};
       setForm({
-        name: u.name || "",
-        email: u.email || "",
-        phone: u.phone || "",
-        location: u.location || "",
-        planningStyle: u.planningStyle || "",
-    });
+        name: biodata.parentName || "",
+        email: biodata.email || "",
+        phone: biodata.phone || "",
+        location: biodata.location || "",
+        planningStyle: "",
     });
   }, [router]);
 

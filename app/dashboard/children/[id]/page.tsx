@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
+import { getOnboardingState } from "@/lib/store";
 import { getChild, getAssessments, getGoals, getEvidence, getReflections, PILLARS, DEVELOPMENT_LEVELS, GOAL_STATUSES } from "@/lib/store";
 
 export default function ChildDetailPage({ params }: { params: { id: string } }) {
@@ -15,22 +15,21 @@ export default function ChildDetailPage({ params }: { params: { id: string } }) 
   const router = useRouter();
 
   useEffect(() => {
-    getCurrentUser().then((u) => {
-      if (!u) {
-        router.push("/");
+    const onboarding = getOnboardingState();
+      if (!onboarding) {
+        router.replace("/onboarding/welcome");
         return;
       }
       const c = getChild(params.id);
-      if (!c || c.parentId !== u.id) {
+      if (!c || c.parentId !== onboarding.parentId) {
         router.push("/dashboard/children");
         return;
       }
       setChild(c);
       setAssessments(getAssessments(c.id));
       setGoals(getGoals(c.id));
-      setEvidence(getEvidence(c.id));
-      setReflections(getReflections(c.id));
-    });
+       setEvidence(getEvidence(c.id));
+       setReflections(getReflections(c.id));
   }, [params.id, router]);
 
   if (!child) return null;

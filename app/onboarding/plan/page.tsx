@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
 import { getOnboardingState as getStoreOnboardingState, saveOnboardingState as saveStoreOnboardingState } from "@/lib/store";
 
 const steps = [
@@ -108,7 +107,7 @@ export default function OnboardingPlanPage() {
     <div className="min-h-screen flex flex-col bg-muted/30">
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-border">
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link href="/" className="text-lg font-bold text-primary tracking-tight">
+          <Link href="/dashboard" className="text-lg font-bold text-primary tracking-tight">
             Total Child
           </Link>
         </div>

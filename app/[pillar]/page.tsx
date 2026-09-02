@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
+import { getOnboardingState } from "@/lib/store";
 import { ACTIVITY_LIBRARY, PILLARS } from "@/lib/store";
 
 const PILLAR_CONFIG: Record<string, { title: string; description: string; icon: string; color: string; module: string }> = {
@@ -50,14 +50,13 @@ export default function PillarPage({ params }: { params: { pillar: string } }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getCurrentUser().then((u) => {
-      if (!u) {
-        router.push("/");
-      } else {
-        setUser(u);
-        setLoading(false);
-      }
-    });
+    const onboarding = getOnboardingState();
+    if (!onboarding) {
+      router.replace("/onboarding/welcome");
+      return;
+    }
+    setUser({ id: onboarding.parentId });
+    setLoading(false);
   }, [router, params.pillar]);
 
   const config = PILLAR_CONFIG[params.pillar];

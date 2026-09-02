@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getCurrentUser, requireAuth } from "@/lib/auth";
+import { getOnboardingState } from "@/lib/store";
 import { getChildren, getAssessments, createAssessment, PILLARS, DEVELOPMENT_LEVELS } from "@/lib/store";
 import BackButton from "@/components/BackButton";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -21,13 +21,13 @@ export default function AssessPage() {
   const router = useRouter();
 
   useEffect(() => {
-    getCurrentUser().then((u) => {
-      if (!u) {
-        router.push("/");
+    const onboarding = getOnboardingState();
+      if (!onboarding) {
+        router.replace("/onboarding/welcome");
         return;
       }
-      setUser(u);
-      const kids = getChildren(u.id);
+      setUser({ id: onboarding.parentId });
+      const kids = getChildren(onboarding.parentId);
       setChildren(kids);
       if (kids.length > 0) {
         const savedChild = localStorage.getItem("selectedChildId");
@@ -35,7 +35,6 @@ export default function AssessPage() {
         setSelectedChildId(child.id);
         loadAssessments(child.id);
       }
-    });
   }, [router]);
 
   function loadAssessments(childId: string) {

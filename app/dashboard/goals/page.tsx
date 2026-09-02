@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
+import { getOnboardingState } from "@/lib/store";
 import { getChildren, getGoals, createGoal, updateGoal, deleteGoal, PILLARS, DEVELOPMENT_LEVELS, GOAL_STATUSES } from "@/lib/store";
 import BackButton from "@/components/BackButton";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -49,13 +49,13 @@ export default function GoalsPage() {
   const router = useRouter();
 
   useEffect(() => {
-    getCurrentUser().then((u) => {
-      if (!u) {
-        router.push("/");
+    const onboarding = getOnboardingState();
+      if (!onboarding) {
+        router.replace("/onboarding/welcome");
         return;
       }
-      setUser(u);
-      const kids = getChildren(u.id);
+      setUser({ id: onboarding.parentId });
+      const kids = getChildren(onboarding.parentId);
       setChildren(kids);
       if (kids.length > 0) {
         const saved = localStorage.getItem("selectedChildId");
@@ -63,7 +63,6 @@ export default function GoalsPage() {
         setSelectedChildId(child.id);
         setGoals(getGoals(child.id));
       }
-    });
   }, [router]);
 
   function handleChildChange(childId: string) {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
+import { getOnboardingState } from "@/lib/store";
 import { getChild, PILLARS, getPillarLabel } from "@/lib/store";
 
 export default function ReportDetailPage({ params }: { params: { id: string } }) {
@@ -12,13 +12,12 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
   const router = useRouter();
 
   useEffect(() => {
-    getCurrentUser().then((u) => {
-      if (!u) {
-        router.push("/");
+    const onboarding = getOnboardingState();
+      if (!onboarding) {
+        router.replace("/onboarding/welcome");
         return;
       }
-      setUser(u);
-    });
+      setUser({ id: onboarding.parentId });
   }, [router]);
 
   useEffect(() => {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
+import { getOnboardingState } from "@/lib/store";
 import { getChildren, ACTIVITY_LIBRARY, PILLARS, SAFETY_LEVELS } from "@/lib/store";
 
 const PILLAR = "PARENT_GUIDANCE";
@@ -25,19 +25,18 @@ export default function ParentGuidancePage() {
   const pillarInfo = PILLARS.find((p) => p.value === PILLAR);
 
   useEffect(() => {
-    getCurrentUser().then((u) => {
-      if (!u) {
-        router.push("/");
+    const onboarding = getOnboardingState();
+      if (!onboarding) {
+        router.replace("/onboarding/welcome");
         return;
       }
-      setUser(u);
-      const kids = getChildren(u.id);
+      setUser({ id: onboarding.parentId });
+      const kids = getChildren(onboarding.parentId);
       setChildren(kids);
       if (kids.length > 0) {
         const saved = localStorage.getItem("selectedChildId");
         setSelectedChildId(saved || kids[0].id);
       }
-    });
   }, [router]);
 
   function handleChildChange(childId: string) {

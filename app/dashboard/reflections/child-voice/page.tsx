@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
+import { getOnboardingState } from "@/lib/store";
 import { getChildren, getReflections, createReflection } from "@/lib/store";
 
 const CHILD_VOICE_QUESTIONS = [
@@ -23,13 +23,13 @@ export default function ChildVoicePage() {
   const router = useRouter();
 
   useEffect(() => {
-    getCurrentUser().then((u) => {
-      if (!u) {
-        router.push("/");
+    const onboarding = getOnboardingState();
+      if (!onboarding) {
+        router.replace("/onboarding/welcome");
         return;
       }
-      setUser(u);
-      const kids = getChildren(u.id);
+      setUser({ id: onboarding.parentId });
+      const kids = getChildren(onboarding.parentId);
       setChildren(kids);
       if (kids.length > 0) {
         const savedChild = localStorage.getItem("selectedChildId");
@@ -37,7 +37,6 @@ export default function ChildVoicePage() {
         setSelectedChildId(child.id);
         setReflections(getReflections(child.id).filter((r) => r.type === "childVoice"));
       }
-    });
   }, [router]);
 
   function handleChildChange(childId: string) {

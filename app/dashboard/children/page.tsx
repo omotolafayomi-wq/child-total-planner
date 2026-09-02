@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getCurrentUser, requireAuth } from "@/lib/auth";
+import { getOnboardingState } from "@/lib/store";
 import { getChildren, createChild, updateChild, archiveChild } from "@/lib/store";
 
 export default function ChildrenPage() {
@@ -23,14 +23,13 @@ export default function ChildrenPage() {
   const router = useRouter();
 
   useEffect(() => {
-    getCurrentUser().then((u) => {
-      if (!u) {
-        router.push("/");
+    const onboarding = getOnboardingState();
+      if (!onboarding) {
+        router.replace("/onboarding/welcome");
         return;
       }
-      setUser(u);
-      setChildren(getChildren(u.id));
-    });
+      setUser({ id: onboarding.parentId });
+      setChildren(getChildren(onboarding.parentId));
   }, [router]);
 
   function resetForm() {

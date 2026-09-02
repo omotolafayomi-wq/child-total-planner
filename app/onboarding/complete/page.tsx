@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
-import { getOnboardingState as getStoreOnboardingState, clearOnboardingState } from "@/lib/store";
+import { getOnboardingState as getStoreOnboardingState } from "@/lib/store";
 
 export default function OnboardingCompletePage() {
   const router = useRouter();
@@ -20,14 +19,13 @@ export default function OnboardingCompletePage() {
       router.push("/onboarding/child");
       return;
     }
-    clearOnboardingState();
   }, [router]);
 
   useEffect(() => {
     if (existing?.childId) {
       const timer = setTimeout(() => {
-        router.push("/dashboard");
-      }, 4000);
+        router.push("/dashboard?welcome=1");
+      }, 2000);
       return () => clearTimeout(timer);
     }
   }, [existing, router]);
@@ -46,7 +44,7 @@ export default function OnboardingCompletePage() {
     <div className="min-h-screen flex flex-col bg-muted/30">
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-border">
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link href="/" className="text-lg font-bold text-primary tracking-tight">
+          <Link href="/dashboard" className="text-lg font-bold text-primary tracking-tight">
             Total Child
           </Link>
         </div>
