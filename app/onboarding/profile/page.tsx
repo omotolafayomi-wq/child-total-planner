@@ -164,11 +164,11 @@ export default function OnboardingProfilePage() {
           supportNeeded: "To be determined through planning",
         });
       }
-      const updated = { ...existing, step: "complete" as const, profileData: { ...form, email: form.email.trim() }, updatedAt: new Date().toISOString() };
+      const updated = { ...existing, step: "plan" as const, profileData: { ...form, email: form.email.trim() }, updatedAt: new Date().toISOString() };
       saveStoreOnboardingState(updated as any);
       setSaved(true);
       setTimeout(() => {
-        router.push("/dashboard?welcome=1");
+        router.push("/onboarding/plan");
       }, 600);
     } catch (err) {
       setError("We couldn't save that just now. Please try again.");
