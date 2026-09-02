@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getOnboardingState as getStoreOnboardingState } from "@/lib/store";
-import { getChildren, getGoals, getPlans, getEvidence, getReflections, getAchievements, getAssessments, PILLARS, DEVELOPMENT_LEVELS, GOAL_STATUSES } from "@/lib/store";
+import { getChildren, getGoals, getPlans, getEvidence, getReflections, getAchievements, getAssessments, PILLARS, DEVELOPMENT_LEVELS, GOAL_STATUSES, WORKFLOW_STEPS } from "@/lib/store";
 
 export default function DashboardPage() {
   const [children, setChildren] = useState<any[]>([]);
@@ -16,6 +16,8 @@ export default function DashboardPage() {
   const [achievements, setAchievements] = useState<any[]>([]);
   const [assessments, setAssessments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentWorkflowStep, setCurrentWorkflowStep] = useState<typeof WORKFLOW_STEPS[number]>("ASSESS");
+  const [showNextStepPopup, setShowNextStepPopup] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const isNewUser = searchParams.get("welcome") === "1";
@@ -68,6 +70,66 @@ export default function DashboardPage() {
     loadChildData(childId);
   }
 
+  function getNextStepRecommendation() {
+    if (!selectedChild) {
+      return {
+        title: "Add Your Child",
+        description: "Start by adding your child's profile",
+        link: "/onboarding/child",
+        buttonText: "Add Child"
+      };
+    }
+
+    const hasAssessment = assessments.some(a => PILLARS.slice(0,5).some(p => p.value === a.pillar));
+    if (!hasAssessment) {
+      return {
+        title: "Start Assessment",
+        description: "Assess your child's current capabilities",
+        link: "/dashboard/assess",
+        buttonText: "Assess Now"
+      };
+    }
+
+    const hasPlan = plans.length > 0;
+    if (!hasPlan) {
+      return {
+        title: "Create Plan",
+        description: "Turn assessment into a development plan",
+        link: "/onboarding/plan",
+        buttonText: "Create Plan"
+      };
+    }
+
+    const hasGoals = activeGoals.length > 0;
+    if (!hasGoals) {
+      return {
+        title: "Set Goals",
+        description: "Set development goals for your child",
+        link: "/dashboard/goals",
+        buttonText: "Set Goals"
+      };
+    }
+
+    const hasEvidence = evidence.length > 0;
+    if (!hasEvidence) {
+      return {
+        title: "Add Evidence",
+        description: "Document your child's progress",
+        link: "/dashboard/evidence",
+        buttonText: "Add Evidence"
+      };
+    }
+
+    return {
+      title: "Keep Going",
+      description: "Continue the development cycle",
+      link: "/dashboard/activities",
+      buttonText: "Explore Activities"
+    };
+  }
+
+  const nextStep = getNextStepRecommendation();
+
   const activeGoals = goals.filter((g) => g.status === "IN_PROGRESS" || g.status === "NOT_STARTED");
   const recentEvidence = evidence.slice(-3).reverse();
   const pillarAssessments = PILLARS.slice(0, 5).map((p) => {
@@ -75,6 +137,32 @@ export default function DashboardPage() {
     const levelIndex = assessment ? DEVELOPMENT_LEVELS.findIndex((l) => l.value === assessment.level) : -1;
     return { ...p, level: assessment?.level || "BEGINNING", levelIndex };
   });
+
+  useEffect(() => {
+    if (!selectedChild) {
+      setCurrentWorkflowStep("ASSESS");
+      return;
+    }
+    const hasAssessment = assessments.some(a => PILLARS.slice(0,5).some(p => p.value === a.pillar));
+    const hasPlan = plans.length > 0;
+    const hasGoals = activeGoals.length > 0;
+    const hasEvidence = evidence.length > 0;
+    const hasReflection = reflections.length > 0;
+
+    if (!hasAssessment) {
+      setCurrentWorkflowStep("ASSESS");
+    } else if (!hasPlan) {
+      setCurrentWorkflowStep("PLAN");
+    } else if (!hasGoals) {
+      setCurrentWorkflowStep("ACT");
+    } else if (!hasEvidence) {
+      setCurrentWorkflowStep("TRACK");
+    } else if (!hasReflection) {
+      setCurrentWorkflowStep("REVIEW");
+    } else {
+      setCurrentWorkflowStep("IMPROVE");
+    }
+  }, [selectedChild, assessments, plans, activeGoals, evidence, reflections]);
 
   function renderNextStepCard() {
     if (!selectedChild) {
@@ -90,87 +178,87 @@ export default function DashboardPage() {
         </div>
       );
     }
-    const hasRealAssessment = assessments.some((a) => PILLARS.slice(0, 5).some((p) => p.value === a.pillar));
-    if (!hasRealAssessment) {
-      return (
-        <div className="card border-l-4 border-l-primary">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h3 className="font-semibold">Create Development Profile</h3>
-              <p className="text-sm text-muted-foreground mt-1">Your child's profile is ready. Now let's understand where they are today.</p>
+
+    switch (currentWorkflowStep) {
+      case "ASSESS":
+        return (
+          <div className="card border-l-4 border-l-primary">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="font-semibold">Start Assessment</h3>
+                <p className="text-sm text-muted-foreground mt-1">Assess your child's current capabilities across all development domains.</p>
+              </div>
+              <Link href="/dashboard/assess" className="btn-primary whitespace-nowrap">Assess Now</Link>
             </div>
-            <Link href="/onboarding/profile" className="btn-primary whitespace-nowrap">Create Development Profile</Link>
           </div>
-        </div>
-      );
-    }
-    if (plans.length === 0) {
-      return (
-        <div className="card border-l-4 border-l-gold-500">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h3 className="font-semibold">Now let's create a plan.</h3>
-              <p className="text-sm text-muted-foreground mt-1">Turn your assessment into a structured development plan.</p>
+        );
+      case "PLAN":
+        return (
+          <div className="card border-l-4 border-l-gold-500">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="font-semibold">Create Development Plan</h3>
+                <p className="text-sm text-muted-foreground mt-1">Turn your assessment into a structured development plan.</p>
+              </div>
+              <Link href="/onboarding/plan" className="btn-primary whitespace-nowrap">Create Plan</Link>
             </div>
-            <Link href="/onboarding/plan" className="btn-primary whitespace-nowrap">Start Plan</Link>
           </div>
-        </div>
-      );
-    }
-    if (activeGoals.length === 0) {
-      return (
-        <div className="card border-l-4 border-l-growth-600">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h3 className="font-semibold">Begin with a development assessment.</h3>
-              <p className="text-sm text-muted-foreground mt-1">Understand current capabilities across all development domains.</p>
+        );
+      case "ACT":
+        return (
+          <div className="card border-l-4 border-l-growth-600">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="font-semibold">Set Development Goals</h3>
+                <p className="text-sm text-muted-foreground mt-1">Set clear development goals for your child based on the plan.</p>
+              </div>
+              <Link href="/dashboard/goals" className="btn-primary whitespace-nowrap">Set Goals</Link>
             </div>
-            <Link href="/dashboard/assess" className="btn-primary whitespace-nowrap">Assess Child</Link>
           </div>
-        </div>
-      );
-    }
-    if (evidence.length === 0) {
-      return (
-        <div className="card border-l-4 border-l-purple-500">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h3 className="font-semibold">Turn goals into actionable activities.</h3>
-              <p className="text-sm text-muted-foreground mt-1">Discover practical activities aligned with your goals.</p>
+        );
+      case "TRACK":
+        return (
+          <div className="card border-l-4 border-l-purple-500">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="font-semibold">Add Evidence</h3>
+                <p className="text-sm text-muted-foreground mt-1">Document your child's progress with photos, videos, or notes.</p>
+              </div>
+              <Link href="/dashboard/evidence" className="btn-primary whitespace-nowrap">Add Evidence</Link>
             </div>
-            <Link href="/dashboard/activities" className="btn-primary whitespace-nowrap">Discover Activities</Link>
           </div>
-        </div>
-      );
-    }
-    const hasIncompletePlan = plans.some((plan) => plan.entries.some((entry: any) => !entry.completed));
-    if (hasIncompletePlan) {
-      return (
-        <div className="card border-l-4 border-l-emerald-500">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h3 className="font-semibold">See what needs to happen today.</h3>
-              <p className="text-sm text-muted-foreground mt-1">You have active activities in your plan.</p>
+        );
+      case "REVIEW":
+        return (
+          <div className="card border-l-4 border-l-emerald-500">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="font-semibold">Weekly Review</h3>
+                <p className="text-sm text-muted-foreground mt-1">Reflect on the week's progress and plan adjustments.</p>
+              </div>
+              <Link href="/dashboard/reflections/parent-review" className="btn-primary whitespace-nowrap">Review Progress</Link>
             </div>
-            <Link href="/dashboard/plan/weekly" className="btn-primary whitespace-nowrap">View Today's Plan</Link>
           </div>
-        </div>
-      );
+        );
+      case "IMPROVE":
+      case "CONTINUE":
+        return (
+          <div className="card border-l-4 border-l-blue-500">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="font-semibold">Keep the momentum going</h3>
+                <p className="text-sm text-muted-foreground mt-1">Review progress, add new evidence or explore activities.</p>
+              </div>
+              <div className="flex gap-2">
+                <Link href="/dashboard/activities" className="btn-outline whitespace-nowrap">Explore Activities</Link>
+                <Link href="/dashboard/reflections/parent-review" className="btn-primary whitespace-nowrap">Weekly Review</Link>
+              </div>
+            </div>
+          </div>
+        );
+      default:
+        return null;
     }
-    return (
-      <div className="card border-l-4 border-l-blue-500">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h3 className="font-semibold">Keep the momentum going</h3>
-            <p className="text-sm text-muted-foreground mt-1">Review progress, add new evidence or explore activities.</p>
-          </div>
-          <div className="flex gap-2">
-            <Link href="/dashboard/activities" className="btn-outline whitespace-nowrap">Explore Activities</Link>
-            <Link href="/dashboard/reflections/parent-review" className="btn-primary whitespace-nowrap">Weekly Review</Link>
-          </div>
-        </div>
-      </div>
-    );
   }
 
 
@@ -248,6 +336,25 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div className="space-y-6">
+          {(() => {
+            const onboarding = getStoreOnboardingState();
+            const isOnboardingComplete = onboarding?.step === "complete";
+            return isOnboardingComplete && selectedChild ? (
+              <div className="card border-l-4 border-l-primary bg-primary/5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h3 className="font-semibold text-primary">Start My Child's Developmental Plan</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Begin with an assessment to understand your child's current capabilities.
+                    </p>
+                  </div>
+                  <Link href="/dashboard/assess" className="btn-primary whitespace-nowrap">
+                    Start Assessment
+                  </Link>
+                </div>
+              </div>
+            ) : null;
+          })()}
           {renderNextStepCard()}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {pillarAssessments.map((pillar) => (
@@ -353,14 +460,31 @@ export default function DashboardPage() {
               </div>
 
               <div className="card">
-                <h2 className="section-title mb-3">Development Cycle</h2>
-                <div className="flex flex-wrap items-center gap-2 text-xs font-medium">
-                  {["ASSESS", "PLAN", "ACT", "TRACK", "REVIEW", "IMPROVE", "CONTINUE"].map((step, idx) => (
-                    <span key={step} className="flex items-center gap-2">
-                      <span className="rounded-full bg-primary/10 text-primary px-2 py-1">{step}</span>
-                      {idx < 6 && <span className="text-muted-foreground">→</span>}
-                    </span>
-                  ))}
+                <h2 className="section-title mb-4">Development Cycle</h2>
+                <div className="flex items-center justify-between overflow-x-auto pb-2">
+                  {WORKFLOW_STEPS.map((step, idx) => {
+                    const isActive = currentWorkflowStep === step;
+                    const isCompleted = WORKFLOW_STEPS.indexOf(currentWorkflowStep) > idx;
+                    return (
+                      <div key={step} className="flex items-center">
+                        <div className="flex flex-col items-center">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors ${
+                            isCompleted ? "bg-growth-600 border-growth-600 text-white" :
+                            isActive ? "bg-primary border-primary text-white" :
+                            "bg-white border-border text-muted-foreground"
+                          }`}>
+                            {isCompleted ? "✓" : idx + 1}
+                          </div>
+                          <span className={`text-xs mt-1 font-medium ${isActive ? "text-primary" : "text-muted-foreground"}`}>
+                            {step}
+                          </span>
+                        </div>
+                        {idx < 6 && (
+                          <div className={`w-8 h-0.5 mx-1 ${isCompleted ? "bg-growth-600" : "bg-border"}`} />
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -381,6 +505,40 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+      <div className="fixed right-4 bottom-20 z-40">
+        <button
+          onClick={() => setShowNextStepPopup(!showNextStepPopup)}
+          className="w-14 h-14 rounded-full bg-primary text-white shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors"
+          aria-label="What's next"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 16v-4"/>
+            <path d="M12 8h.01"/>
+          </svg>
+        </button>
+
+        {showNextStepPopup && (
+          <div className="absolute right-16 bottom-16 w-72 bg-white rounded-lg shadow-xl border border-border p-4">
+            <div className="flex items-start justify-between mb-2">
+              <h4 className="font-semibold text-sm">{nextStep.title}</h4>
+              <button
+                onClick={() => setShowNextStepPopup(false)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">{nextStep.description}</p>
+            <Link href={nextStep.link} className="btn-primary w-full text-center text-sm">
+              {nextStep.buttonText}
+            </Link>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

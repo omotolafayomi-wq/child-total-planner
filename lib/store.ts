@@ -536,6 +536,8 @@ export const SAFETY_LEVELS: { value: SafetyLevel; label: string; description: st
   { value: "SUPERVISION_REQUIRED", label: "Supervision Required", description: "Direct adult supervision is essential" },
 ];
 
+export const WORKFLOW_STEPS = ["ASSESS", "PLAN", "ACT", "TRACK", "REVIEW", "IMPROVE", "CONTINUE"] as const;
+
 export function getPillarLabel(pillar: string): string {
   const found = PILLARS.find((p) => p.value === pillar);
   return found?.label || pillar;

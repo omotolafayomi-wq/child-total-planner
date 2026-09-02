@@ -1,227 +1,245 @@
-# No-Auth Public Onboarding: Biodata Collection + Icon Landing Page
+# Dashboard Workflow: ASSESS → PLAN → ACT → TRACK → REVIEW → IMPROVE → CONTINUE
 
 ## Goal
-1. Remove all authentication (no sign-in, sign-up, sessions, cookies)
-2. Replace first onboarding step with parent biodata collection form (Next/Back/Submit)
-3. Remove all auth redirects across the app
-4. Pillar Explore buttons → `/activities` after onboarding, `/dashboard` before onboarding
-5. Landing page: welcoming icon-based overview instead of stock photo
-6. Add privacy caveat and required agreement checkbox before onboarding submission
+1. Connect the dashboard to the development workflow: ASSESS → PLAN → ACT → TRACK → REVIEW → IMPROVE → CONTINUE
+2. Show "Start My Child's Developmental Plan" button only after onboarding is complete
+3. Add a small floating pop-up button by the side showing what's next to do
 
-## Design Decisions (Resolved)
-- **No auth**: No server-side sessions, no cookies, no `/api/auth/signin` or `/api/auth/signup` calls from onboarding
-- **User identification**: LocalStorage-only via onboarding state (`/onboarding/welcome` creates a local parent profile)
-- **Onboarding**: Multi-step biodata form with Next/Back/Submit buttons
-- **Conditional routing**: Check onboarding completion status for Explore buttons
-- **Landing page**: Icon grid explaining the 5 pillars and features, no external image
-- **Privacy**: Show privacy caveat and require agreement checkbox before final submission
+## Current State
+- Dashboard has a static "Development Cycle" section showing the workflow steps
+- `renderNextStepCard()` shows contextual next steps but not in workflow order
+- No "Start My Child's Developmental Plan" button
+- No floating "what's next" button
+
+## Target State
+- Dashboard shows a connected workflow with visual progress indicators
+- "Start My Child's Developmental Plan" appears only after onboarding completion
+- Floating side button shows next recommended action based on workflow state
 
 ## Tasks
 
-### 1. Update `app/onboarding/welcome/page.tsx` — Privacy caveat and agreement checkbox
+### 1. Add workflow progress state to dashboard
 
-**Add to `app/onboarding/welcome/page.tsx`:**
-
-1. Add state after `currentStep`:
+Add state to track current workflow step:
 ```tsx
-const [agreed, setAgreed] = useState(false);
+const [currentWorkflowStep, setCurrentWorkflowStep] = useState<string>("ASSESS");
 ```
 
-2. Add check at top of `handleSubmit`:
+Determine current step based on data:
 ```tsx
-if (!agreed) {
-  setError("Please agree to the privacy statement before continuing.");
-  return;
-}
+useEffect(() => {
+  if (!selectedChild) {
+    setCurrentWorkflowStep("ASSESS");
+    return;
+  }
+  const hasAssessment = assessments.some(a => PILLARS.slice(0,5).some(p => p.value === a.pillar));
+  const hasPlan = plans.length > 0;
+  const hasGoals = activeGoals.length > 0;
+  const hasEvidence = evidence.length > 0;
+  const hasReflection = reflections.length > 0;
+
+  if (!hasAssessment) {
+    setCurrentWorkflowStep("ASSESS");
+  } else if (!hasPlan) {
+    setCurrentWorkflowStep("PLAN");
+  } else if (!hasGoals) {
+    setCurrentWorkflowStep("ACT");
+  } else if (!hasEvidence) {
+    setCurrentWorkflowStep("TRACK");
+  } else if (!hasReflection) {
+    setCurrentWorkflowStep("REVIEW");
+  } else {
+    setCurrentWorkflowStep("IMPROVE");
+  }
+}, [selectedChild, assessments, plans, activeGoals, evidence, reflections]);
 ```
 
-3. Replace final submit button JSX with:
+### 2. Replace static Development Cycle with interactive workflow
+
+Replace the current static workflow display with an interactive horizontal stepper:
+
 ```tsx
-<div className="rounded-lg border border-border bg-muted/30 p-4">
-  <p className="text-xs text-muted-foreground leading-relaxed">
-    <span className="font-semibold text-foreground">Privacy note:</span>{" "}
-    The information you provide here is stored only in your browser and is used solely for your personal planning experience.
-    It is not shared with third parties, and you remain in control of your data throughout.
-  </p>
+<div className="card">
+  <h2 className="section-title mb-4">Development Cycle</h2>
+  <div className="flex items-center justify-between overflow-x-auto pb-2">
+    {["ASSESS", "PLAN", "ACT", "TRACK", "REVIEW", "IMPROVE", "CONTINUE"].map((step, idx) => {
+      const isActive = currentWorkflowStep === step;
+      const isCompleted = WORKFLOW_STEPS.indexOf(currentWorkflowStep) > idx;
+      return (
+        <div key={step} className="flex items-center">
+          <div className="flex flex-col items-center">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors ${
+              isCompleted ? "bg-growth-600 border-growth-600 text-white" :
+              isActive ? "bg-primary border-primary text-white" :
+              "bg-white border-border text-muted-foreground"
+            }`}>
+              {isCompleted ? "✓" : idx + 1}
+            </div>
+            <span className={`text-xs mt-1 font-medium ${isActive ? "text-primary" : "text-muted-foreground"}`}>
+              {step}
+            </span>
+          </div>
+          {idx < 6 && (
+            <div className={`w-8 h-0.5 mx-1 ${isCompleted ? "bg-growth-600" : "bg-border"}`} />
+          )}
+        </div>
+      );
+    })}
+  </div>
 </div>
-<label className="flex items-start gap-3 rounded-lg border border-border bg-white p-4 cursor-pointer">
-  <input
-    type="checkbox"
-    checked={agreed}
-    onChange={(e) => setAgreed(e.target.checked)}
-    className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary"
-  />
-  <span className="text-sm text-muted-foreground">
-    I have read the privacy note and agree that my data will be used only for my personal planning experience.
-  </span>
-</label>
-<button
-  type="submit"
-  className="btn-primary w-full"
-  disabled={loading || saved || !agreed}
->
-  {loading ? "Saving..." : saved ? "Saved" : "Add My Child"}
-</button>
-{!agreed && (
-  <p className="text-xs text-red-600 mt-2">You must agree to the privacy statement before continuing.</p>
+```
+
+### 3. Add "Start My Child's Developmental Plan" button
+
+Add a prominent button that only appears after onboarding is complete:
+
+```tsx
+const onboarding = getStoreOnboardingState();
+const isOnboardingComplete = onboarding?.step === "complete";
+
+{isOnboardingComplete && selectedChild && (
+  <div className="card border-l-4 border-l-primary bg-primary/5">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <h3 className="font-semibold text-primary">Start My Child's Developmental Plan</h3>
+        <p className="text-sm text-muted-foreground mt-1">
+          Begin with an assessment to understand your child's current capabilities.
+        </p>
+      </div>
+      <Link href="/dashboard/assess" className="btn-primary whitespace-nowrap">
+        Start Assessment
+      </Link>
+    </div>
+  </div>
 )}
 ```
 
-### 2. Rewrite `app/onboarding/welcome/page.tsx` — Parent biodata form
+Place this after the greeting section and before `renderNextStepCard()`.
 
-**Current state**: Collects name, email, password and calls `signUp()`.
+### 4. Add floating "What's Next" popup button
 
-**New state**: Collect parent biodata, no auth call.
+Create a floating button component that shows the next recommended action:
 
-**Form fields** (multi-step with Next/Back/Submit):
-- Step 1: Parent full name, email, phone number
-- Step 2: Family location (state/city), number of children
-- Submit: saves to localStorage onboarding state, redirects to `/onboarding/child`
-
-**Remove**:
-- `signUp` import and call
-- `getCurrentUser` check
-- Password fields
-- Account creation logic
-
-**Keep**:
-- Progress indicator
-- Redirect to `/onboarding/child` after completion
-
-### 2. Update all onboarding pages — Remove auth guards
-
-**Pages to update**:
-- `app/onboarding/welcome/page.tsx` — done above
-- `app/onboarding/child/page.tsx` — remove `getCurrentUser()`, redirect to `/onboarding/welcome` if no state
-- `app/onboarding/profile/page.tsx` — remove `getCurrentUser()`, redirect to `/onboarding/welcome` if no state
-- `app/onboarding/plan/page.tsx` — remove `getCurrentUser()`, redirect to `/onboarding/welcome` if no state
-- `app/onboarding/complete/page.tsx` — remove `getCurrentUser()`, redirect to `/onboarding/welcome` if no state
-
-**Pattern for each page**:
 ```tsx
-// Remove auth check
-// Replace with:
-const onboarding = getStoreOnboardingState();
-if (!onboarding) {
-  router.push("/onboarding/welcome");
-}
-```
+const [showNextStepPopup, setShowNextStepPopup] = useState(false);
 
-### 3. Update `app/page.tsx` — Icon-based landing page
-
-**Remove**:
-- Stock photo (`<img>` from Unsplash)
-- Brand text overlay on image
-- Session-dependent conditional rendering
-- Auth modal references
-
-**Add**:
-- Welcoming hero section with icon grid
-- 5 pillar icons with descriptions
-- Feature cards: Assess, Goals, Activities, Evidence, Reports
-- Clear value proposition text
-- "Start My Child's Development Plan" button → `/onboarding/welcome`
-- "I already have an account / Sign In" button → `/dashboard` (for returning users)
-
-**Layout**:
-```
-Header: Total Child logo/text
-Hero: "Raise a child who can learn, live, lead, earn and serve"
-Subtitle: Brief explanation
-Icon Grid: 5 pillars + key features
-CTA: Start My Child's Development Plan
-Secondary CTA: I have a profile / Sign In
-Footer: Links
-```
-
-### 4. Update pillar Explore buttons — Conditional routing
-
-**Current**: All pillar icons → `/dashboard`
-
-**New logic**:
-```tsx
-const isOnboardingComplete = /* check onboarding state */;
-
-const handlePillarClick = (slug: string) => {
-  if (isOnboardingComplete) {
-    router.push(`/dashboard/activities?pillar=${slug}`);
-  } else {
-    router.push("/dashboard");
+function getNextStepRecommendation() {
+  if (!selectedChild) {
+    return {
+      title: "Add Your Child",
+      description: "Start by adding your child's profile",
+      link: "/onboarding/child",
+      buttonText: "Add Child"
+    };
   }
-};
+  
+  const hasAssessment = assessments.some(a => PILLARS.slice(0,5).some(p => p.value === a.pillar));
+  if (!hasAssessment) {
+    return {
+      title: "Start Assessment",
+      description: "Assess your child's current capabilities",
+      link: "/dashboard/assess",
+      buttonText: "Assess Now"
+    };
+  }
+  
+  const hasPlan = plans.length > 0;
+  if (!hasPlan) {
+    return {
+      title: "Create Plan",
+      description: "Turn assessment into a development plan",
+      link: "/onboarding/plan",
+      buttonText: "Create Plan"
+    };
+  }
+  
+  const hasGoals = activeGoals.length > 0;
+  if (!hasGoals) {
+    return {
+      title: "Set Goals",
+      description: "Set development goals for your child",
+      link: "/dashboard/goals",
+      buttonText: "Set Goals"
+    };
+  }
+  
+  const hasEvidence = evidence.length > 0;
+  if (!hasEvidence) {
+    return {
+      title: "Add Evidence",
+      description: "Document your child's progress",
+      link: "/dashboard/evidence",
+      buttonText: "Add Evidence"
+    };
+  }
+  
+  return {
+    title: "Keep Going",
+    description: "Continue the development cycle",
+    link: "/dashboard/activities",
+    buttonText: "Explore Activities"
+  };
+}
+
+const nextStep = getNextStepRecommendation();
 ```
 
-**Update pages**:
-- `app/page.tsx` — landing page pillar icons
-- `app/[pillar]/page.tsx` — if accessed directly, check onboarding state
+Add the floating button JSX:
+```tsx
+<div className="fixed right-4 bottom-20 z-40">
+  <button
+    onClick={() => setShowNextStepPopup(!showNextStepPopup)}
+    className="w-14 h-14 rounded-full bg-primary text-white shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors"
+    aria-label="What's next"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <path d="M12 16v-4"/>
+      <path d="M12 8h.01"/>
+    </svg>
+  </button>
+  
+  {showNextStepPopup && (
+    <div className="absolute right-16 bottom-16 w-72 bg-white rounded-lg shadow-xl border border-border p-4">
+      <div className="flex items-start justify-between mb-2">
+        <h4 className="font-semibold text-sm">{nextStep.title}</h4>
+        <button
+          onClick={() => setShowNextStepPopup(false)}
+          className="text-muted-foreground hover:text-foreground"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <p className="text-xs text-muted-foreground mb-3">{nextStep.description}</p>
+      <Link href={nextStep.link} className="btn-primary w-full text-center text-sm">
+        {nextStep.buttonText}
+      </Link>
+    </div>
+  )}
+</div>
+```
 
-### 5. Update `components/AppShell.tsx` — Remove auth guards
+### 5. Update renderNextStepCard to align with workflow
 
-**Current**: Redirects unauthenticated users to `/signin`.
-
-**Changes**:
-- Remove `getCurrentUser()` check
-- Remove session-dependent redirects
-- Allow all pages to render without auth
-- Dashboard should still work with localStorage data only
-
-**Alternative**: If auth is completely removed, consider removing `AppShell` auth wrapper entirely and let each page handle its own state.
-
-### 6. Remove auth redirects across all pages
-
-Search and update all `router.push("/signin")`, `router.push("/signup")`, `router.push("/login")` to either:
-- `/onboarding/welcome` (if user needs to start onboarding)
-- `/dashboard` (if they should go to dashboard)
-- `/` (landing page)
-
-**Pages to check**:
-- All `app/dashboard/**/page.tsx`
-- All `app/onboarding/**/page.tsx`
-- `app/[pillar]/page.tsx`
-- `app/activities/page.tsx`
-- `app/reports/**`
-
-### 7. Update dashboard pages to work without auth
-
-**Current**: Dashboard pages call `getCurrentUser()` and redirect if null.
-
-**New approach**:
-- Dashboard pages should check for onboarding state in localStorage
-- If onboarding state exists, render dashboard with stored parentId
-- If no onboarding state, redirect to `/onboarding/welcome`
-
-### 8. Clean up auth-related code
-
-- Remove unused imports: `getCurrentUser`, `signIn`, `signUp`, `signOut` from pages that don't need them
-- Consider keeping API routes for future use, but remove client-side calls
-- Update `lib/auth.ts` exports if needed
+Update `renderNextStepCard()` to use workflow-based logic:
+- Check current workflow step
+- Show appropriate next action based on step
+- Link to correct page for each step
 
 ## Files to Modify
-- `app/onboarding/welcome/page.tsx` — biodata form, no auth
-- `app/onboarding/child/page.tsx` — remove auth guard
-- `app/onboarding/profile/page.tsx` — remove auth guard
-- `app/onboarding/plan/page.tsx` — remove auth guard
-- `app/onboarding/complete/page.tsx` — remove auth guard
-- `app/page.tsx` — icon-based landing page
-- `components/AppShell.tsx` — remove auth guards
-- `app/[pillar]/page.tsx` — conditional routing
-- `app/dashboard/page.tsx` — work without auth
-- All other dashboard pages — remove auth redirects
+- `app/dashboard/page.tsx` — Main dashboard updates
 
 ## Validation Plan
-1. Run `npm run build` — must pass with no TypeScript errors
-2. Manual test:
-   - Visit `/` → see icon-based landing page
-   - Click "Start My Child's Development Plan" → `/onboarding/welcome`
-   - Fill biodata form with Next/Back → complete → `/onboarding/child`
-   - Complete full onboarding → `/dashboard`
-   - Click pillar icons before onboarding → `/dashboard`
-   - Click pillar icons after onboarding → `/dashboard/activities?pillar=...`
-   - Refresh during onboarding → state preserved, stays on current step
-   - No auth prompts anywhere
+1. Run `npm run build` — must pass
+2. Verify workflow shows correct step based on user data
+3. Verify "Start My Child's Developmental Plan" only appears after onboarding
+4. Verify floating button shows correct next step recommendation
+5. Test all workflow transitions
 
 ## Out of Scope
-- Backend auth removal (API routes kept for potential future use)
-- Data migration for existing users
-- Password reset or account recovery
-- Multi-device sync without auth
+- Detailed workflow page for each step
+- Backend changes to support workflow state
+- Analytics or progress tracking beyond basic state
