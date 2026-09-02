@@ -245,7 +245,27 @@ export default function ActivitiesPage() {
             const isSelected = selectedActivities.includes(activity.id);
             const pillarLabel = PILLARS.find((p) => p.value === activity.pillar)?.label || activity.pillar.replace(/_/g, " ");
             const pillarColor = PILLARS.find((p) => p.value === activity.pillar)?.color || "bg-gray-100";
-            const moduleHref = `/dashboard/modules/${activity.pillar.toLowerCase().replace(/_/g, "-")}`;
+            const MODULE_SLUG_MAP: Record<string, string> = {
+              LEARN: "learn",
+              LIVE: "live",
+              LEAD: "lead",
+              EARN: "earn",
+              SERVE: "serve",
+              DIGITAL_BUILDER: "digital-builder",
+              LIFE_SKILLS: "life-skills",
+              YOUNG_ENTREPRENEUR: "young-entrepreneur",
+              CREATIVE_EXPLORER: "creative-explorer",
+              FUTURE_READY: "future-ready",
+              HEALTH_WELLBEING: "health-wellbeing",
+              CHARACTER_VALUES: "character-values",
+              FAMILY_GROWTH: "family-growth",
+              EXPLORATION: "exploration",
+              EXAM_PREPARATION: "exams",
+              CHILD_DEVELOPMENT_TRACKER: "tracker",
+              HOLIDAY_GROWTH: "holiday",
+              SCHOOL_TERM_DEVELOPMENT: "school-term",
+            };
+            const moduleHref = `/dashboard/modules/${MODULE_SLUG_MAP[activity.pillar] || activity.pillar.toLowerCase().replace(/_/g, "-")}`;
 
             return (
               <div key={activity.id} className={`card-interactive rounded-xl border border-border bg-white transition-all ${isExpanded ? "shadow-lg" : "shadow-sm hover:shadow-md hover:-translate-y-0.5"}`}>
