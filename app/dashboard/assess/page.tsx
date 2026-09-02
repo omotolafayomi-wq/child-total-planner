@@ -23,7 +23,7 @@ export default function AssessPage() {
   useEffect(() => {
     getCurrentUser().then((u) => {
       if (!u) {
-        router.push("/signin");
+        router.push("/");
         return;
       }
       setUser(u);
@@ -174,3 +174,4 @@ export default function AssessPage() {
     </div>
   );
 }
+

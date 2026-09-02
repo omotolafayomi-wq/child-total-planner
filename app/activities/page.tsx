@@ -29,10 +29,11 @@ export default function PublicActivitiesPage() {
         <p className="text-muted-foreground mb-4">
           Want to save activities and create personalized plans?
         </p>
-        <Link href="/signup" className="btn-primary">
+        <Link href="/" className="btn-primary">
           Create Free Account
         </Link>
       </div>
     </div>
   );
 }
+

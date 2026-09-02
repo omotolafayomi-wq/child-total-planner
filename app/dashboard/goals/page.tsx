@@ -51,7 +51,7 @@ export default function GoalsPage() {
   useEffect(() => {
     getCurrentUser().then((u) => {
       if (!u) {
-        router.push("/signin");
+        router.push("/");
         return;
       }
       setUser(u);
@@ -338,3 +338,4 @@ export default function GoalsPage() {
     </div>
   );
 }
+

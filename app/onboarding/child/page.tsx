@@ -114,7 +114,7 @@ export default function OnboardingChildPage() {
 
   useEffect(() => {
     if (!user) {
-      router.push("/signin");
+      router.push("/");
       return;
     }
     if (existing?.childData) {
@@ -438,3 +438,4 @@ export default function OnboardingChildPage() {
     </div>
   );
 }
+

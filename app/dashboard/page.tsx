@@ -32,7 +32,7 @@ export default function DashboardPage() {
     getCurrentUser().then((u) => {
       if (!mounted) return;
       if (!u) {
-        router.push("/signin");
+        router.push("/");
         return;
       }
       setUser(u);
@@ -399,3 +399,4 @@ function getPillarLabel(pillar: string): string {
   const found = PILLARS.find((p) => p.value === pillar);
   return found?.label || pillar;
 }
+

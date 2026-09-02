@@ -33,7 +33,7 @@ export default function PortfolioPage() {
   useEffect(() => {
     getCurrentUser().then((u) => {
       if (!u) {
-        router.push("/signin");
+        router.push("/");
         return;
       }
       setUser(u);
@@ -176,3 +176,4 @@ export default function PortfolioPage() {
     </div>
   );
 }
+

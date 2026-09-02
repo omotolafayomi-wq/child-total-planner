@@ -50,6 +50,7 @@ function ProgressIndicator({ currentStep }: { currentStep: (typeof steps)[number
 }
 
 type ProfileFormData = {
+  email: string;
   strengths: string;
   areasToDevelop: string;
   interests: string;
@@ -60,9 +61,9 @@ type ProfileFormData = {
 
 const formSteps = [
   {
-    title: "Strengths & Growth",
-    subtitle: "What does your child already do well, and what would you like to see improve?",
-    fields: ["strengths", "areasToDevelop"] as (keyof ProfileFormData)[],
+    title: "Contact & Strengths",
+    subtitle: "Where can we reach you, and what does your child already do well?",
+    fields: ["email", "strengths", "areasToDevelop"] as (keyof ProfileFormData)[],
   },
   {
     title: "Interests & Responsibilities",
@@ -82,6 +83,7 @@ export default function OnboardingProfilePage() {
   const existing = user ? getStoreOnboardingState(user.id) : null;
 
   const [form, setForm] = useState<ProfileFormData>({
+    email: "",
     strengths: "",
     areasToDevelop: "",
     interests: "",
@@ -100,7 +102,7 @@ export default function OnboardingProfilePage() {
 
   useEffect(() => {
     if (!user) {
-      router.push("/signin");
+      router.push("/");
       return;
     }
     if (!existing?.childId) {
@@ -110,6 +112,7 @@ export default function OnboardingProfilePage() {
     if (existing.profileData) {
       const data = existing.profileData as any;
       setForm({
+        email: Array.isArray(data.email) ? data.email.join(", ") : data.email,
         strengths: Array.isArray(data.strengths) ? data.strengths.join(", ") : data.strengths,
         areasToDevelop: Array.isArray(data.areasToDevelop) ? data.areasToDevelop.join(", ") : data.areasToDevelop,
         interests: Array.isArray(data.interests) ? data.interests.join(", ") : data.interests,
@@ -164,7 +167,7 @@ export default function OnboardingProfilePage() {
           supportNeeded: "To be determined through planning",
         });
       }
-      const updated = { ...existing, step: "plan" as const, profileData: form, updatedAt: new Date().toISOString() };
+      const updated = { ...existing, step: "plan" as const, profileData: { ...form, email: form.email.trim() }, updatedAt: new Date().toISOString() };
       saveStoreOnboardingState(updated as any);
       setSaved(true);
       setTimeout(() => {
@@ -232,6 +235,14 @@ export default function OnboardingProfilePage() {
 
           <form onSubmit={handleSubmit} className="card space-y-6">
             {currentStepData.fields.map((field) => {
+              if (field === "email") {
+                return (
+                  <div key={field}>
+                    <label className="label" htmlFor="email">Email Address</label>
+                    <input id="email" type="email" className="input" placeholder="you@example.com" value={form.email} onChange={(e) => update("email", e.target.value)} required />
+                  </div>
+                );
+              }
               if (field === "strengths") {
                 return (
                   <div key={field}>
@@ -310,3 +321,4 @@ export default function OnboardingProfilePage() {
     </div>
   );
 }
+

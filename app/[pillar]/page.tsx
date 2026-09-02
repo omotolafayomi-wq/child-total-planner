@@ -52,7 +52,7 @@ export default function PillarPage({ params }: { params: { pillar: string } }) {
   useEffect(() => {
     getCurrentUser().then((u) => {
       if (!u) {
-        router.push(`/signin?redirect=/${params.pillar}`);
+        router.push("/");
       } else {
         setUser(u);
         setLoading(false);

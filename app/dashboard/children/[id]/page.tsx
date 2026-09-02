@@ -17,7 +17,7 @@ export default function ChildDetailPage({ params }: { params: { id: string } }) 
   useEffect(() => {
     getCurrentUser().then((u) => {
       if (!u) {
-        router.push("/signin");
+        router.push("/");
         return;
       }
       const c = getChild(params.id);

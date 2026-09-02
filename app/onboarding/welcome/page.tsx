@@ -53,7 +53,7 @@ export default function OnboardingWelcomePage() {
 
   useEffect(() => {
     if (!user) {
-      router.push("/signin");
+      router.push("/");
       return;
     }
     const kids = getChildren(user.id);
@@ -139,3 +139,4 @@ export default function OnboardingWelcomePage() {
     </div>
   );
 }
+

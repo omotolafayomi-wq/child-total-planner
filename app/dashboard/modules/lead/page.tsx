@@ -27,7 +27,7 @@ export default function LeadModulePage() {
 
   useEffect(() => {
     getCurrentUser().then((u) => {
-      if (!u) { router.push("/signin"); return; }
+      if (!u) { router.push("/"); return; }
       setUser(u);
       const kids = getChildren(u.id);
       setChildren(kids);
@@ -94,3 +94,4 @@ export default function LeadModulePage() {
     </div>
   );
 }
+

@@ -14,7 +14,7 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
   useEffect(() => {
     getCurrentUser().then((u) => {
       if (!u) {
-        router.push("/signin");
+        router.push("/");
         return;
       }
       setUser(u);
@@ -42,6 +42,62 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
     window.print();
   }
 
+  async function handleDownloadPdf() {
+    try {
+      const { jsPDF } = await import("jspdf");
+      const { default: autoTable } = await import("jspdf-autotable");
+      const doc = new jsPDF();
+
+      doc.setFontSize(18);
+      doc.text("Total Child Development Report", 14, 22);
+
+      doc.setFontSize(11);
+      doc.text(`Generated: ${new Date(report.generatedAt).toLocaleDateString()}`, 14, 30);
+
+      doc.setFontSize(13);
+      doc.text("Parent Biodata", 14, 42);
+      doc.setFontSize(11);
+      doc.text(`Name: ${user.name}`, 14, 50);
+      doc.text(`Email: ${user.email}`, 14, 58);
+
+      doc.setFontSize(13);
+      doc.text(`Child: ${child.name}`, 14, 72);
+      doc.setFontSize(11);
+      doc.text(`Age: ${child.age} • School Level: ${child.schoolLevel}`, 14, 80);
+
+      if (report.goalsCompleted?.length > 0 || report.goalsDeveloping?.length > 0) {
+        const rows: any[] = [];
+        if (report.goalsCompleted?.length > 0) {
+          report.goalsCompleted.forEach((g: string) => rows.push(["Goals Achieved", g]));
+        }
+        if (report.goalsDeveloping?.length > 0) {
+          report.goalsDeveloping.forEach((g: string) => rows.push(["Goals In Progress", g]));
+        }
+        autoTable(doc, {
+          startY: 92,
+          head: [["Status", "Goal"]],
+          body: rows,
+          theme: "grid",
+          headStyles: { fillColor: [63, 163, 107] },
+        });
+      }
+
+      if (report.evidenceHighlights?.length > 0) {
+        const finalY = (doc as any).lastAutoTable?.finalY || 92;
+        doc.setFontSize(13);
+        doc.text("Evidence Highlights", 14, finalY + 10);
+        doc.setFontSize(11);
+        report.evidenceHighlights.forEach((e: string, i: number) => {
+          doc.text(`• ${e}`, 14, finalY + 18 + i * 6);
+        });
+      }
+
+      doc.save(`total-child-report-${child.name}-${new Date(report.generatedAt).toISOString().split("T")[0]}.pdf`);
+    } catch (err) {
+      alert("Failed to generate PDF. Please try again.");
+    }
+  }
+
   if (!report || !child) return null;
 
   return (
@@ -50,9 +106,14 @@ export default function ReportDetailPage({ params }: { params: { id: string } })
         <button onClick={() => router.push("/dashboard/reports")} className="btn-outline">
           ← Back to Reports
         </button>
-        <button onClick={handlePrint} className="btn-primary">
-          Print / Save PDF
-        </button>
+        <div className="flex gap-2">
+          <button onClick={handleDownloadPdf} className="btn-outline">
+            Download PDF
+          </button>
+          <button onClick={handlePrint} className="btn-primary">
+            Print / Save PDF
+          </button>
+        </div>
       </div>
 
       <div className="card print:shadow-none print:border-none">

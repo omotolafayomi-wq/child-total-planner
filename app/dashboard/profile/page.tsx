@@ -18,7 +18,7 @@ export default function ProfilePage() {
   useEffect(() => {
     getCurrentUser().then((u) => {
       if (!u) {
-        router.push("/signin");
+        router.push("/");
         return;
       }
       setUser(u);
@@ -143,3 +143,4 @@ export default function ProfilePage() {
     </div>
   );
 }
+

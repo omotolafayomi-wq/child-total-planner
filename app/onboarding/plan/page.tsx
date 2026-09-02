@@ -64,7 +64,7 @@ export default function OnboardingPlanPage() {
 
   useEffect(() => {
     if (!user) {
-      router.push("/signin");
+      router.push("/");
       return;
     }
     if (!existing?.childId) {
@@ -165,3 +165,4 @@ export default function OnboardingPlanPage() {
     </div>
   );
 }
+

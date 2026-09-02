@@ -195,13 +195,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!authChecked) return;
-    const isAuthPage = pathname === "/signin" || pathname === "/signup" || pathname === "/forgot-password";
+    const isAuthPage = pathname === "/forgot-password";
     const isLanding = pathname === "/";
     const isLegalPage = pathname === "/about" || pathname === "/contact" || pathname === "/terms" || pathname === "/privacy";
     const isOnboarding = pathname.startsWith("/onboarding");
     if (isAuthPage || isLanding || isLegalPage || isOnboarding) return;
     if (!session) {
-      router.push("/signin");
+      router.push("/");
     }
   }, [authChecked, session, pathname, router]);
 
@@ -230,7 +230,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const selectedChild = childrenList.find((c) => c.id === selectedChildId);
 
-  const isAuthPage = pathname === "/signin" || pathname === "/signup" || pathname === "/forgot-password";
+  const isAuthPage = pathname === "/forgot-password";
   const isLanding = pathname === "/";
   const isLegalPage = pathname === "/about" || pathname === "/contact" || pathname === "/terms" || pathname === "/privacy";
   const isOnboarding = pathname.startsWith("/onboarding");

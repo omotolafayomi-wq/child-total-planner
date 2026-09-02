@@ -41,7 +41,7 @@ export default function WeeklyPlanPage() {
   useEffect(() => {
     getCurrentUser().then((u) => {
       if (!u) {
-        router.push("/signin");
+        router.push("/");
         return;
       }
       setUser(u);
@@ -262,3 +262,4 @@ export default function WeeklyPlanPage() {
     </div>
   );
 }
+

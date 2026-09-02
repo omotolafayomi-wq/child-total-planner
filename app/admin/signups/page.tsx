@@ -31,7 +31,7 @@ export default function AdminSignupsPage() {
   useEffect(() => {
     getCurrentUser().then((u) => {
       if (!u || !isAdmin(u)) {
-        router.push("/signin");
+        router.push("/");
         return;
       }
       setUser(u);
@@ -195,3 +195,4 @@ export default function AdminSignupsPage() {
     </div>
   );
 }
+

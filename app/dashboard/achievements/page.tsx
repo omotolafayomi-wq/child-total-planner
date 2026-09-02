@@ -29,7 +29,7 @@ export default function AchievementsPage() {
   useEffect(() => {
     getCurrentUser().then((u) => {
       if (!u) {
-        router.push("/signin");
+        router.push("/");
         return;
       }
       setUser(u);
@@ -140,3 +140,4 @@ export default function AchievementsPage() {
     </div>
   );
 }
+
