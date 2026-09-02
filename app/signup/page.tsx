@@ -43,7 +43,7 @@ function SignUpForm() {
       if (result.session) {
         setSuccess(true);
         setTimeout(() => {
-          router.push("/dashboard?welcome=1");
+          router.push("/onboarding/welcome");
         }, 600);
       }
     } catch (err) {

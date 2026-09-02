@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn, getCurrentUser } from "@/lib/auth";
+import { getChildren } from "@/lib/store";
 
 function SignInForm() {
   const [email, setEmail] = useState("");
@@ -13,13 +14,22 @@ function SignInForm() {
   const [redirecting, setRedirecting] = useState(false);
   const router = useRouter();
 
+  function redirectBasedOnChildren(user: any) {
+    const kids = getChildren(user.id);
+    if (kids.length === 0) {
+      router.push("/onboarding/welcome");
+    } else {
+      router.push("/dashboard");
+    }
+  }
+
   useEffect(() => {
     let mounted = true;
     getCurrentUser().then((u) => {
       if (mounted && u) {
         setRedirecting(true);
         setTimeout(() => {
-          router.push("/dashboard");
+          redirectBasedOnChildren(u);
         }, 300);
       }
     });
@@ -36,7 +46,12 @@ function SignInForm() {
       await signIn(email, password);
       setEmail("");
       setPassword("");
-      router.push("/dashboard");
+      const u = await getCurrentUser();
+      if (u) {
+        redirectBasedOnChildren(u);
+      } else {
+        router.push("/dashboard");
+      }
     } catch (err) {
       setError((err as Error)?.message || "Failed to sign in.");
     } finally {

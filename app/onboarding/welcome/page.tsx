@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { getOnboardingState as getStoreOnboardingState, saveOnboardingState as saveStoreOnboardingState } from "@/lib/store";
+import { getChildren, getOnboardingState as getStoreOnboardingState, saveOnboardingState as saveStoreOnboardingState } from "@/lib/store";
 
 const steps = [
   { key: "welcome", label: "Welcome" },
@@ -54,6 +54,11 @@ export default function OnboardingWelcomePage() {
   useEffect(() => {
     if (!user) {
       router.push("/signin");
+      return;
+    }
+    const kids = getChildren(user.id);
+    if (kids.length > 0) {
+      router.push("/dashboard");
       return;
     }
     const existing = getStoreOnboardingState(user.id);

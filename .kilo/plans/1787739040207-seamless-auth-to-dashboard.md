@@ -1,569 +1,176 @@
-# Fix Activity Module 404s: Create Missing Modules + URL Mapping
+# Seamless Sign-in → Onboarding → Dashboard Flow
 
 ## Goal
-Fix the "Explore Module" buttons on activity cards that currently lead to 404 errors by:
-1. Creating 5 missing module pages for core pillars (Learn, Live, Lead, Earn, Serve)
-2. Fixing the URL slug mapping in the activities page to match existing folder structure
+Fix the sign-in flow so that:
+1. New users always start at onboarding/welcome after sign-in
+2. Returning users (with children) skip onboarding and go to dashboard
+3. Full onboarding flow (welcome → child → profile → plan → complete) works without glitches
+4. Dashboard is the final destination after onboarding completion
 
-## Current State
-- **Activities page** (`app/dashboard/activities/page.tsx` line 248): Generates module URLs using formula `/dashboard/modules/${activity.pillar.toLowerCase().replace(/_/g, "-")}`
-- **5 missing module pages**: `learn`, `live`, `lead`, `earn`, `serve`
-- **3 mismatched slugs**: `holiday-growth` vs `holiday`, `child-development-tracker` vs `tracker`, `school-term-development` vs `school-term`
-- **Existing module pattern** (`app/dashboard/modules/creative-explorer/page.tsx`): Uses PILLAR constant, MODULE_DESCRIPTION, GUIDANCE array, filters ACTIVITY_LIBRARY
-- **Existing exams folder**: `app/dashboard/modules/exams/page.tsx` already exists and will be used for EXAM_PREPARATION
+## Current Issues
+- `app/signin/page.tsx` redirects to `/dashboard` instead of `/onboarding/welcome`
+- `app/onboarding/welcome/page.tsx` doesn't check if user has children (should skip to dashboard for returning users)
+- `app/onboarding/complete/page.tsx` auto-redirects to dashboard after 4 seconds but may have timing issues
+- No clear "onboarding completed" flag to prevent returning users from seeing onboarding again
 
-## Target State
-- All "Explore Module" buttons link to valid module pages
-- New module pages follow the same pattern as existing ones
-- Content is engaging, practical, and culturally relevant for Nigerian/African families
+## Target Flow
+```
+Sign-in → Check children count
+  ├── No children → /onboarding/welcome → child → profile → plan → complete → /dashboard
+  └── Has children → /dashboard
+```
 
 ## Files to Change
 
-### 1. Fix URL Mapping in `app/dashboard/activities/page.tsx`
+### 1. `app/signin/page.tsx` — Redirect to onboarding after sign-in
 
-**Line 248**: Replace formula-based URL generation with a mapping function:
+**Line 39**: Change redirect destination and add children check
 
 ```tsx
-const MODULE_SLUG_MAP: Record<string, string> = {
-  LEARN: "learn",
-  LIVE: "live",
-  LEAD: "lead",
-  EARN: "earn",
-  SERVE: "serve",
-  DIGITAL_BUILDER: "digital-builder",
-  LIFE_SKILLS: "life-skills",
-  YOUNG_ENTREPRENEUR: "young-entrepreneur",
-  CREATIVE_EXPLORER: "creative-explorer",
-  FUTURE_READY: "future-ready",
-  HEALTH_WELLBEING: "health-wellbeing",
-  CHARACTER_VALUES: "character-values",
-  FAMILY_GROWTH: "family-growth",
-  EXPLORATION: "exploration",
-  EXAM_PREPARATION: "exams",
-  CHILD_DEVELOPMENT_TRACKER: "tracker",
-  HOLIDAY_GROWTH: "holiday",
-  SCHOOL_TERM_DEVELOPMENT: "school-term",
+// Before:
+router.push("/dashboard");
+
+// After:
+const kids = getChildren(u.id);
+if (kids.length === 0) {
+  router.push("/onboarding/welcome");
+} else {
+  router.push("/dashboard");
+}
+```
+
+**Add import** at top:
+```tsx
+import { signIn, getCurrentUser } from "@/lib/auth";
+import { getChildren } from "@/lib/store";
+```
+
+**Update handleSubmit** to use async/await properly and check children:
+
+```tsx
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError("");
+  setLoading(true);
+  try {
+    await signIn(email, password);
+    setEmail("");
+    setPassword("");
+    const u = await getCurrentUser();
+    if (u) {
+      const kids = getChildren(u.id);
+      if (kids.length === 0) {
+        router.push("/onboarding/welcome");
+      } else {
+        router.push("/dashboard");
+      }
+    } else {
+      router.push("/dashboard");
+    }
+  } catch (err) {
+    setError((err as Error)?.message || "Failed to sign in.");
+  } finally {
+    setLoading(false);
+  }
 };
-
-const moduleHref = `/dashboard/modules/${MODULE_SLUG_MAP[activity.pillar] || activity.pillar.toLowerCase().replace(/_/g, "-")}`;
 ```
 
-### 2. Create `app/dashboard/modules/learn/page.tsx`
+### 2. `app/signup/page.tsx` — Redirect to onboarding after sign-up
+
+**Line 46**: Change redirect destination
 
 ```tsx
-"use client";
+// Before:
+router.push("/dashboard?welcome=1");
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
-import { getChildren, ACTIVITY_LIBRARY, PILLARS } from "@/lib/store";
-
-const PILLAR = "LEARN";
-const MODULE_DESCRIPTION = "Build knowledge, literacy, research, critical thinking and communication skills.";
-const GUIDANCE = [
-  "Create a daily reading routine — even 15 minutes matters.",
-  "Ask open-ended questions that encourage thinking, not just answers.",
-  "Connect learning to real life: market maths, cooking fractions, family budgeting.",
-  "Celebrate effort and progress, not just grades.",
-  "Visit libraries, museums, and educational sites together.",
-  "Encourage curiosity — when you don't know something, research together.",
-];
-
-export default function LearnModulePage() {
-  const [user, setUser] = useState<any>(null);
-  const [children, setChildren] = useState<any[]>([]);
-  const [selectedChildId, setSelectedChildId] = useState("");
-  const router = useRouter();
-
-  const activities = ACTIVITY_LIBRARY.filter((a) => a.pillar === PILLAR);
-  const pillarInfo = PILLARS.find((p) => p.value === PILLAR);
-
-  useEffect(() => {
-    getCurrentUser().then((u) => {
-      if (!u) { router.push("/signin"); return; }
-      setUser(u);
-      const kids = getChildren(u.id);
-      setChildren(kids);
-      if (kids.length > 0) {
-        const saved = localStorage.getItem("selectedChildId");
-        setSelectedChildId(saved || kids[0].id);
-      }
-    });
-  }, [router]);
-
-  function handleChildChange(childId: string) {
-    setSelectedChildId(childId);
-    localStorage.setItem("selectedChildId", childId);
-  }
-
-  if (!user) return null;
-
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">{pillarInfo?.label || "Learn"}</h1>
-          <p className="text-muted-foreground">{MODULE_DESCRIPTION}</p>
-        </div>
-        {children.length > 1 && (
-          <div className="flex items-center gap-2">
-            <label className="label mb-0">Child:</label>
-            <select value={selectedChildId} onChange={(e) => handleChildChange(e.target.value)} className="input w-auto">
-              {children.map((child) => (
-                <option key={child.id} value={child.id}>{child.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
-      </div>
-
-      <div className="card">
-        <h2 className="section-title mb-3">Parent Guidance</h2>
-        <ul className="space-y-2">
-          {GUIDANCE.map((item, i) => (
-            <li key={i} className="flex items-start gap-2 text-sm">
-              <span className="text-primary mt-0.5">•</span>
-              {item}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="card">
-        <h2 className="section-title mb-3">Suggested Activities</h2>
-        {activities.length === 0 ? (
-          <p className="text-muted-foreground text-sm">No specific activities yet. Check the Activities page for ideas.</p>
-        ) : (
-          <div className="space-y-3">
-            {activities.map((activity) => (
-              <div key={activity.id} className="rounded-lg border border-border p-3">
-                <h3 className="font-semibold">{activity.title}</h3>
-                <p className="text-sm text-muted-foreground">{activity.description}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+// After:
+router.push("/onboarding/welcome");
 ```
 
-### 3. Create `app/dashboard/modules/live/page.tsx`
+### 3. `app/onboarding/welcome/page.tsx` — Skip to dashboard for returning users
+
+**Add children check** in the second useEffect (after line 54):
 
 ```tsx
-"use client";
-
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
-import { getChildren, ACTIVITY_LIBRARY, PILLARS } from "@/lib/store";
-
-const PILLAR = "LIVE";
-const MODULE_DESCRIPTION = "Develop practical independence, household skills, health, safety and everyday competence.";
-const GUIDANCE = [
-  "Assign age-appropriate chores: sweeping, washing dishes, cooking simple meals.",
-  "Teach money management through pocket money and saving goals.",
-  "Practice safety skills: road crossing, emergency numbers, stranger awareness.",
-  "Encourage self-care: dressing, hygiene, organising personal items.",
-  "Involve children in family decisions that affect daily life.",
-  "Celebrate practical achievements as much as academic ones.",
-];
-
-export default function LiveModulePage() {
-  const [user, setUser] = useState<any>(null);
-  const [children, setChildren] = useState<any[]>([]);
-  const [selectedChildId, setSelectedChildId] = useState("");
-  const router = useRouter();
-
-  const activities = ACTIVITY_LIBRARY.filter((a) => a.pillar === PILLAR);
-  const pillarInfo = PILLARS.find((p) => p.value === PILLAR);
-
-  useEffect(() => {
-    getCurrentUser().then((u) => {
-      if (!u) { router.push("/signin"); return; }
-      setUser(u);
-      const kids = getChildren(u.id);
-      setChildren(kids);
-      if (kids.length > 0) {
-        const saved = localStorage.getItem("selectedChildId");
-        setSelectedChildId(saved || kids[0].id);
-      }
-    });
-  }, [router]);
-
-  function handleChildChange(childId: string) {
-    setSelectedChildId(childId);
-    localStorage.setItem("selectedChildId", childId);
+useEffect(() => {
+  if (!user) {
+    router.push("/signin");
+    return;
   }
-
-  if (!user) return null;
-
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">{pillarInfo?.label || "Live"}</h1>
-          <p className="text-muted-foreground">{MODULE_DESCRIPTION}</p>
-        </div>
-        {children.length > 1 && (
-          <div className="flex items-center gap-2">
-            <label className="label mb-0">Child:</label>
-            <select value={selectedChildId} onChange={(e) => handleChildChange(e.target.value)} className="input w-auto">
-              {children.map((child) => (
-                <option key={child.id} value={child.id}>{child.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
-      </div>
-
-      <div className="card">
-        <h2 className="section-title mb-3">Parent Guidance</h2>
-        <ul className="space-y-2">
-          {GUIDANCE.map((item, i) => (
-            <li key={i} className="flex items-start gap-2 text-sm">
-              <span className="text-primary mt-0.5">•</span>
-              {item}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="card">
-        <h2 className="section-title mb-3">Suggested Activities</h2>
-        {activities.length === 0 ? (
-          <p className="text-muted-foreground text-sm">No specific activities yet. Check the Activities page for ideas.</p>
-        ) : (
-          <div className="space-y-3">
-            {activities.map((activity) => (
-              <div key={activity.id} className="rounded-lg border border-border p-3">
-                <h3 className="font-semibold">{activity.title}</h3>
-                <p className="text-sm text-muted-foreground">{activity.description}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+  // Skip to dashboard if user already has children
+  const kids = getChildren(user.id);
+  if (kids.length > 0) {
+    router.push("/dashboard");
+    return;
+  }
+  const existing = getStoreOnboardingState(user.id);
+  if (existing && existing.step !== "welcome") {
+    router.push(`/onboarding/${existing.step}`);
+    return;
+  }
+  const state = {
+    step: "welcome" as const,
+    parentId: user.id,
+    startedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  saveStoreOnboardingState(state);
+}, [user, router]);
 ```
 
-### 4. Create `app/dashboard/modules/lead/page.tsx`
+**Add import**:
+```tsx
+import { getCurrentUser } from "@/lib/auth";
+import { getChildren, getOnboardingState as getStoreOnboardingState, saveOnboardingState as saveStoreOnboardingState } from "@/lib/store";
+```
+
+### 4. `app/onboarding/child/page.tsx` — Ensure smooth redirect to profile
+
+**Line 195**: Keep existing redirect to `/onboarding/profile` after child creation
+
+The current flow already redirects to `/onboarding/profile` after saving. No changes needed here.
+
+### 5. `app/onboarding/profile/page.tsx` — Ensure smooth redirect to plan
+
+Verify the profile page redirects to `/onboarding/plan` after completion.
+
+### 6. `app/onboarding/plan/page.tsx` — Ensure smooth redirect to complete
+
+Verify the plan page redirects to `/onboarding/complete` after completion.
+
+### 7. `app/onboarding/complete/page.tsx` — Smooth redirect to dashboard
+
+**Current behavior**: Auto-redirects to `/dashboard` after 4 seconds
+
+**Improvement**: Add a "Go to Dashboard" button for immediate navigation and ensure the auto-reload is reliable:
 
 ```tsx
-"use client";
-
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
-import { getChildren, ACTIVITY_LIBRARY, PILLARS } from "@/lib/store";
-
-const PILLAR = "LEAD";
-const MODULE_DESCRIPTION = "Build communication, decision-making, teamwork, responsibility and mentoring skills.";
-const GUIDANCE = [
-  "Give children leadership roles at home: planning meals, organising family events.",
-  "Encourage them to teach younger siblings or peers.",
-  "Support group projects at school and community activities.",
-  "Model good leadership: listening, fairness, taking responsibility for mistakes.",
-  "Discuss real leaders in your community and what makes them effective.",
-  "Allow them to make decisions and learn from the consequences.",
-];
-
-export default function LeadModulePage() {
-  const [user, setUser] = useState<any>(null);
-  const [children, setChildren] = useState<any[]>([]);
-  const [selectedChildId, setSelectedChildId] = useState("");
-  const router = useRouter();
-
-  const activities = ACTIVITY_LIBRARY.filter((a) => a.pillar === PILLAR);
-  const pillarInfo = PILLARS.find((p) => p.value === PILLAR);
-
-  useEffect(() => {
-    getCurrentUser().then((u) => {
-      if (!u) { router.push("/signin"); return; }
-      setUser(u);
-      const kids = getChildren(u.id);
-      setChildren(kids);
-      if (kids.length > 0) {
-        const saved = localStorage.getItem("selectedChildId");
-        setSelectedChildId(saved || kids[0].id);
-      }
-    });
-  }, [router]);
-
-  function handleChildChange(childId: string) {
-    setSelectedChildId(childId);
-    localStorage.setItem("selectedChildId", childId);
+useEffect(() => {
+  if (user && existing?.childId) {
+    const timer = setTimeout(() => {
+      router.push("/dashboard");
+    }, 4000);
+    return () => clearTimeout(timer);
   }
-
-  if (!user) return null;
-
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">{pillarInfo?.label || "Lead"}</h1>
-          <p className="text-muted-foreground">{MODULE_DESCRIPTION}</p>
-        </div>
-        {children.length > 1 && (
-          <div className="flex items-center gap-2">
-            <label className="label mb-0">Child:</label>
-            <select value={selectedChildId} onChange={(e) => handleChildChange(e.target.value)} className="input w-auto">
-              {children.map((child) => (
-                <option key={child.id} value={child.id}>{child.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
-      </div>
-
-      <div className="card">
-        <h2 className="section-title mb-3">Parent Guidance</h2>
-        <ul className="space-y-2">
-          {GUIDANCE.map((item, i) => (
-            <li key={i} className="flex items-start gap-2 text-sm">
-              <span className="text-primary mt-0.5">•</span>
-              {item}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="card">
-        <h2 className="section-title mb-3">Suggested Activities</h2>
-        {activities.length === 0 ? (
-          <p className="text-muted-foreground text-sm">No specific activities yet. Check the Activities page for ideas.</p>
-        ) : (
-          <div className="space-y-3">
-            {activities.map((activity) => (
-              <div key={activity.id} className="rounded-lg border border-border p-3">
-                <h3 className="font-semibold">{activity.title}</h3>
-                <p className="text-sm text-muted-foreground">{activity.description}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+}, [user, existing, router]);
 ```
 
-### 5. Create `app/dashboard/modules/earn/page.tsx`
+The current implementation already has this. Ensure the button is clearly visible.
 
-```tsx
-"use client";
+### 8. `components/AppShell.tsx` — Remove onboarding redirect logic
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
-import { getChildren, ACTIVITY_LIBRARY, PILLARS } from "@/lib/store";
-
-const PILLAR = "EARN";
-const MODULE_DESCRIPTION = "Foster entrepreneurship, value creation, financial skills and vocational exposure.";
-const GUIDANCE = [
-  "Encourage small ventures: selling crafts, helping at market, lemonade stand.",
-  "Teach the difference between earning, spending, saving and giving.",
-  "Discuss different careers and the skills they require.",
-  "Let them earn through extra responsibilities beyond normal chores.",
-  "Introduce basic business concepts: cost, profit, customer service.",
-  "Celebrate creative ideas for making money through honest work.",
-];
-
-export default function EarnModulePage() {
-  const [user, setUser] = useState<any>(null);
-  const [children, setChildren] = useState<any[]>([]);
-  const [selectedChildId, setSelectedChildId] = useState("");
-  const router = useRouter();
-
-  const activities = ACTIVITY_LIBRARY.filter((a) => a.pillar === PILLAR);
-  const pillarInfo = PILLARS.find((p) => p.value === PILLAR);
-
-  useEffect(() => {
-    getCurrentUser().then((u) => {
-      if (!u) { router.push("/signin"); return; }
-      setUser(u);
-      const kids = getChildren(u.id);
-      setChildren(kids);
-      if (kids.length > 0) {
-        const saved = localStorage.getItem("selectedChildId");
-        setSelectedChildId(saved || kids[0].id);
-      }
-    });
-  }, [router]);
-
-  function handleChildChange(childId: string) {
-    setSelectedChildId(childId);
-    localStorage.setItem("selectedChildId", childId);
-  }
-
-  if (!user) return null;
-
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">{pillarInfo?.label || "Earn"}</h1>
-          <p className="text-muted-foreground">{MODULE_DESCRIPTION}</p>
-        </div>
-        {children.length > 1 && (
-          <div className="flex items-center gap-2">
-            <label className="label mb-0">Child:</label>
-            <select value={selectedChildId} onChange={(e) => handleChildChange(e.target.value)} className="input w-auto">
-              {children.map((child) => (
-                <option key={child.id} value={child.id}>{child.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
-      </div>
-
-      <div className="card">
-        <h2 className="section-title mb-3">Parent Guidance</h2>
-        <ul className="space-y-2">
-          {GUIDANCE.map((item, i) => (
-            <li key={i} className="flex items-start gap-2 text-sm">
-              <span className="text-primary mt-0.5">•</span>
-              {item}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="card">
-        <h2 className="section-title mb-3">Suggested Activities</h2>
-        {activities.length === 0 ? (
-          <p className="text-muted-foreground text-sm">No specific activities yet. Check the Activities page for ideas.</p>
-        ) : (
-          <div className="space-y-3">
-            {activities.map((activity) => (
-              <div key={activity.id} className="rounded-lg border border-border p-3">
-                <h3 className="font-semibold">{activity.title}</h3>
-                <p className="text-sm text-muted-foreground">{activity.description}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-```
-
-### 6. Create `app/dashboard/modules/serve/page.tsx`
-
-```tsx
-"use client";
-
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
-import { getChildren, ACTIVITY_LIBRARY, PILLARS } from "@/lib/store";
-
-const PILLAR = "SERVE";
-const MODULE_DESCRIPTION = "Cultivate community participation, environmental responsibility and civic contribution.";
-const GUIDANCE = [
-  "Participate together in community clean-ups or neighbour help.",
-  "Visit elderly relatives and community members regularly.",
-  "Discuss local issues and how families can contribute positively.",
-  "Practice environmental care: recycling, planting trees, reducing waste.",
-  "Volunteer as a family at church, mosque, or community events.",
-  "Teach that serving others builds character and community.",
-];
-
-export default function ServeModulePage() {
-  const [user, setUser] = useState<any>(null);
-  const [children, setChildren] = useState<any[]>([]);
-  const [selectedChildId, setSelectedChildId] = useState("");
-  const router = useRouter();
-
-  const activities = ACTIVITY_LIBRARY.filter((a) => a.pillar === PILLAR);
-  const pillarInfo = PILLARS.find((p) => p.value === PILLAR);
-
-  useEffect(() => {
-    getCurrentUser().then((u) => {
-      if (!u) { router.push("/signin"); return; }
-      setUser(u);
-      const kids = getChildren(u.id);
-      setChildren(kids);
-      if (kids.length > 0) {
-        const saved = localStorage.getItem("selectedChildId");
-        setSelectedChildId(saved || kids[0].id);
-      }
-    });
-  }, [router]);
-
-  function handleChildChange(childId: string) {
-    setSelectedChildId(childId);
-    localStorage.setItem("selectedChildId", childId);
-  }
-
-  if (!user) return null;
-
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">{pillarInfo?.label || "Serve"}</h1>
-          <p className="text-muted-foreground">{MODULE_DESCRIPTION}</p>
-        </div>
-        {children.length > 1 && (
-          <div className="flex items-center gap-2">
-            <label className="label mb-0">Child:</label>
-            <select value={selectedChildId} onChange={(e) => handleChildChange(e.target.value)} className="input w-auto">
-              {children.map((child) => (
-                <option key={child.id} value={child.id}>{child.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
-      </div>
-
-      <div className="card">
-        <h2 className="section-title mb-3">Parent Guidance</h2>
-        <ul className="space-y-2">
-          {GUIDANCE.map((item, i) => (
-            <li key={i} className="flex items-start gap-2 text-sm">
-              <span className="text-primary mt-0.5">•</span>
-              {item}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="card">
-        <h2 className="section-title mb-3">Suggested Activities</h2>
-        {activities.length === 0 ? (
-          <p className="text-muted-foreground text-sm">No specific activities yet. Check the Activities page for ideas.</p>
-        ) : (
-          <div className="space-y-3">
-            {activities.map((activity) => (
-              <div key={activity.id} className="rounded-lg border border-border p-3">
-                <h3 className="font-semibold">{activity.title}</h3>
-                <p className="text-sm text-muted-foreground">{activity.description}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-```
+The AppShell should NOT redirect to onboarding. The sign-in page handles this decision. Remove any remaining onboarding redirect logic in AppShell if present.
 
 ## Validation Plan
 1. Run `npm run build` — must pass with no TypeScript errors
-2. Verify all module routes exist in build output (learn, live, lead, earn, serve, exams)
-3. Manual test flow:
-   - Navigate to `/dashboard/activities`
-   - Expand each activity card
-   - Click "Explore Module" for each activity
-   - Verify no 404 errors — all should load their respective module pages
+2. Manual test flow:
+   - **New user sign-up**: Create account → should land on `/onboarding/welcome`
+   - **Complete onboarding**: Fill child form → profile → plan → complete → should land on `/dashboard`
+   - **Returning user sign-in**: Sign out → sign in again → should land directly on `/dashboard` (skip onboarding)
+   - **Direct sign-in as new user**: Sign in with account that has no children → should land on `/onboarding/welcome`
 
 ## Out of Scope
-- Changes to existing module pages (creative-explorer, digital-builder, exams, etc.)
-- Adding new activities to ACTIVITY_LIBRARY
-- Changes to the activities page layout or styling beyond URL mapping
-- Content for `parent-guidance` module (already exists)
+- Changes to onboarding form fields or validation
+- Changes to dashboard content or layout
+- Changes to sign-up form fields
+- Adding new onboarding steps
