@@ -3,11 +3,10 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
+import { getOnboardingState as getStoreOnboardingState } from "@/lib/store";
 import { getChildren, getGoals, getPlans, getEvidence, getReflections, getAchievements, getAssessments, PILLARS, DEVELOPMENT_LEVELS, GOAL_STATUSES } from "@/lib/store";
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<any>(null);
   const [children, setChildren] = useState<any[]>([]);
   const [selectedChild, setSelectedChild] = useState<any>(null);
   const [goals, setGoals] = useState<any[]>([]);
@@ -28,27 +27,20 @@ export default function DashboardPage() {
   }, [isNewUser, router]);
 
   useEffect(() => {
-    let mounted = true;
-    getCurrentUser().then((u) => {
-      if (!mounted) return;
-      if (!u) {
-        router.push("/");
-        return;
-      }
-      setUser(u);
-      const kids = getChildren(u.id);
-      setChildren(kids);
-      if (kids.length > 0) {
-        const saved = localStorage.getItem("selectedChildId");
-        const child = kids.find((c) => c.id === saved) || kids[0];
-        setSelectedChild(child);
-        loadChildData(child.id);
-      }
+    const onboarding = getStoreOnboardingState();
+    if (!onboarding) {
       setLoading(false);
-    });
-    return () => {
-      mounted = false;
-    };
+      return;
+    }
+    const kids = getChildren(onboarding.parentId);
+    setChildren(kids);
+    if (kids.length > 0) {
+      const saved = localStorage.getItem("selectedChildId");
+      const child = kids.find((c) => c.id === saved) || kids[0];
+      setSelectedChild(child);
+      loadChildData(child.id);
+    }
+    setLoading(false);
   }, [router]);
 
   useEffect(() => {
@@ -190,14 +182,12 @@ export default function DashboardPage() {
     );
   }
 
-  if (!user) return null;
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Welcome back, {user.name}</h1>
-           <p className="text-muted-foreground">Let's keep helping {selectedChild?.name || 'your child'} grow.</p>
+          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground">{selectedChild ? `Viewing ${selectedChild.name}'s progress` : 'Add a child to get started'}</p>
         </div>
         {children.length > 0 && (
           <div className="flex items-center gap-2">

@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { getCurrentUser, signOut } from "@/lib/auth";
 import { getChildren } from "@/lib/store";
+import { getOnboardingState as getStoreOnboardingState } from "@/lib/store";
 import ChildFormModal from "./ChildFormModal";
 
 const navItems = [
@@ -146,11 +146,9 @@ const footerLinks = [
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<any>(null);
   const [childrenList, setChildrenList] = useState<any[]>([]);
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
   const [childSwitcherOpen, setChildSwitcherOpen] = useState(false);
-  const [authChecked, setAuthChecked] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showChildModal, setShowChildModal] = useState(false);
   const [navCollapsed, setNavCollapsed] = useState(false);
@@ -174,54 +172,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    async function loadSession() {
-      const user = await getCurrentUser();
-      setSession(user);
-      if (user) {
-        const kids = getChildren(user.id);
-        setChildrenList(kids);
-        const saved = localStorage.getItem("selectedChildId");
-        if (saved && kids.find((c: any) => c.id === saved)) {
-          setSelectedChildId(saved);
-        } else if (kids.length > 0) {
-          setSelectedChildId(kids[0].id);
-          localStorage.setItem("selectedChildId", kids[0].id);
-        }
-      }
-      setAuthChecked(true);
-    }
-    loadSession();
-  }, []);
-
-  useEffect(() => {
-    if (!authChecked) return;
-    const isAuthPage = pathname === "/forgot-password";
-    const isLanding = pathname === "/";
-    const isLegalPage = pathname === "/about" || pathname === "/contact" || pathname === "/terms" || pathname === "/privacy";
-    const isOnboarding = pathname.startsWith("/onboarding");
-    if (isAuthPage || isLanding || isLegalPage || isOnboarding) return;
-    if (!session) {
-      router.push("/");
-    }
-  }, [authChecked, session, pathname, router]);
-
-  useEffect(() => {
-    if (!session) return;
-    const isDashboard = pathname === "/dashboard" || pathname.startsWith("/dashboard/");
-    if (!isDashboard) return;
-    const kids = getChildren(session.id);
-    setChildrenList(kids);
-    if (kids.length > 0 && !selectedChildId) {
+    const onboarding = getStoreOnboardingState();
+    if (onboarding) {
+      const kids = getChildren(onboarding.parentId);
+      setChildrenList(kids);
       const saved = localStorage.getItem("selectedChildId");
-      const child = kids.find((c: any) => c.id === saved) || kids[0];
-      setSelectedChildId(child.id);
-      localStorage.setItem("selectedChildId", child.id);
+      if (saved && kids.find((c: any) => c.id === saved)) {
+        setSelectedChildId(saved);
+      } else if (kids.length > 0) {
+        setSelectedChildId(kids[0].id);
+        localStorage.setItem("selectedChildId", kids[0].id);
+      }
     }
-  }, [pathname, session, selectedChildId]);
+  }, [pathname]);
 
   const handleSignOut = async () => {
-    await signOut();
-    setSession(null);
+    await fetch("/api/auth/session", { method: "DELETE" });
     setSelectedChildId(null);
     setChildrenList([]);
     setMobileMenuOpen(false);
@@ -237,18 +203,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   if (isAuthPage || isLanding || isLegalPage || isOnboarding) {
     return <>{children}</>;
-  }
-
-  if (!authChecked) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!session) {
-    return null;
   }
 
   const visibleNav = navItems.filter((item) => {
@@ -325,25 +279,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               )}
             </div>
 
-            <Link
-              href="/dashboard"
-              className="hidden md:flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-              aria-label="Dashboard"
-            >
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-xs">
-                {session.name?.[0]?.toUpperCase() || "P"}
-              </div>
-              <span className="hidden lg:inline max-w-[120px] truncate">{session.name}</span>
-            </Link>
+             <Link
+               href="/dashboard"
+               className="hidden md:flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+               aria-label="Dashboard"
+             >
+               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-xs">
+                 <HomeIcon />
+               </div>
+               <span className="hidden lg:inline max-w-[120px] truncate">Dashboard</span>
+             </Link>
 
-            <button
-              onClick={handleSignOut}
-              className="icon-btn hidden md:inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
-              aria-label="Sign out"
-            >
-              <SignOutIcon />
-              <span className="hidden lg:inline">Sign out</span>
-            </button>
+             <button
+               onClick={() => router.push("/onboarding/welcome")}
+               className="icon-btn hidden md:inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
+               aria-label="New profile"
+             >
+               <span className="hidden lg:inline">New Profile</span>
+             </button>
           </div>
         </div>
 
@@ -451,12 +404,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {showChildModal && (
         <ChildFormModal
-          parentId={session?.id || ""}
+          parentId={getStoreOnboardingState()?.parentId || ""}
           onClose={() => setShowChildModal(false)}
           onSave={(child) => {
             setShowChildModal(false);
-            if (session) {
-              const kids = getChildren(session.id);
+            const onboarding = getStoreOnboardingState();
+            if (onboarding) {
+              const kids = getChildren(onboarding.parentId);
               setChildrenList(kids);
               if (kids.length > 0) {
                 setSelectedChildId(kids[0].id);

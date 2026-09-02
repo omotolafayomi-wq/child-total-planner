@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { getOnboardingState as getStoreOnboardingState } from "@/lib/store";
 
 function ChildrenIcon() {
   return (
@@ -54,6 +55,7 @@ function WhatsAppIcon() {
 
 export default function Home() {
   const router = useRouter();
+  const isOnboardingComplete = getStoreOnboardingState()?.step === "complete";
 
   const pillars = [
     {
@@ -108,6 +110,14 @@ export default function Home() {
     },
   ];
 
+  const handlePillarClick = (slug: string) => {
+    if (isOnboardingComplete) {
+      router.push(`/dashboard/activities?pillar=${slug}`);
+    } else {
+      router.push("/dashboard");
+    }
+  };
+
   return (
     <div className="flex flex-col flex-1">
       <main className="flex-1 w-full">
@@ -117,19 +127,6 @@ export default function Home() {
             <div className="absolute bottom-10 right-10 w-48 h-48 rounded-full bg-white/10 blur-3xl" />
           </div>
           <div className="max-w-6xl mx-auto px-4 py-16 md:py-24 lg:py-32 relative">
-            <div className="relative w-full max-w-4xl mx-auto mb-8">
-              <img
-                src="https://images.unsplash.com/photo-1511895426328-dc8714191300?w=1200&h=600&fit=crop"
-                alt="Family working together"
-                className="w-full h-64 sm:h-96 object-cover rounded-2xl shadow-lg"
-                loading="eager"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent rounded-2xl" />
-              <div className="absolute bottom-6 left-6 right-6 text-white">
-                <h2 className="text-2xl sm:text-3xl font-bold mb-2">Total Child</h2>
-                <p className="text-sm sm:text-base text-white/90">Raise a child who can learn, live, lead, earn and serve.</p>
-              </div>
-            </div>
             <div className="max-w-3xl mx-auto text-center">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-white/90 mb-6">
                 <span className="h-2 w-2 rounded-full bg-growth-500 bg-[#3FA36B] animate-pulse" />
@@ -150,6 +147,9 @@ export default function Home() {
                 <button onClick={() => router.push("/onboarding/welcome")} className="btn-accent text-base px-8 py-3">
                   Start My Child&apos;s Development Plan
                 </button>
+                <Link href="/dashboard" className="btn-outline text-base px-8 py-3 border-white/30 text-white hover:bg-white/10 text-center">
+                  I Have A Profile
+                </Link>
               </div>
             </div>
           </div>
@@ -165,7 +165,7 @@ export default function Home() {
               {pillars.map((pillar) => (
                 <button
                   key={pillar.slug}
-                  onClick={() => router.push(`/dashboard`)}
+                  onClick={() => handlePillarClick(pillar.slug)}
                   className={`card-interactive rounded-xl border ${pillar.color} p-6 text-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent text-left`}
                 >
                   <div className="flex justify-center mb-4">

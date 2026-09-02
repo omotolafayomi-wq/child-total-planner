@@ -85,8 +85,7 @@ const formSteps = [
 
 export default function OnboardingChildPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const existing = user ? getStoreOnboardingState(user.id) : null;
+  const existing = getStoreOnboardingState();
 
   const [form, setForm] = useState<FormData>({
     name: "",
@@ -109,21 +108,11 @@ export default function OnboardingChildPage() {
   const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
-    getCurrentUser().then(setUser);
-  }, []);
-
-  useEffect(() => {
-    if (!user) {
-      const existing = getStoreOnboardingState();
-      if (!existing) {
-        router.push("/onboarding/welcome");
-      }
-      return;
+    const existing = getStoreOnboardingState();
+    if (!existing) {
+      router.push("/onboarding/welcome");
     }
-    if (existing?.childData) {
-      setForm(existing.childData as unknown as FormData);
-    }
-  }, [user, router, existing]);
+  }, [router]);
 
   function update(field: keyof FormData, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -176,7 +165,7 @@ export default function OnboardingChildPage() {
     setLoading(true);
     try {
       const child: Child = createChild({
-        parentId: user!.id,
+        parentId: existing!.parentId,
         name: form.name.trim(),
         age: ageNum,
         schoolLevel: form.schoolLevel.trim() || "Not specified",
@@ -187,7 +176,7 @@ export default function OnboardingChildPage() {
       });
       saveStoreOnboardingState({
         step: "profile",
-        parentId: user!.id,
+        parentId: existing!.parentId,
         childId: child.id,
         childData: form as any,
         startedAt: existing?.startedAt || new Date().toISOString(),
@@ -219,7 +208,7 @@ export default function OnboardingChildPage() {
     setLoading(true);
     try {
       createChild({
-        parentId: user!.id,
+        parentId: existing!.parentId,
         name: form.name.trim(),
         age: ageNum,
         schoolLevel: form.schoolLevel.trim() || "Not specified",
@@ -252,7 +241,7 @@ export default function OnboardingChildPage() {
     }
   }
 
-  if (!user) {
+  if (!existing) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/30">
         <div className="text-muted-foreground">Loading...</div>

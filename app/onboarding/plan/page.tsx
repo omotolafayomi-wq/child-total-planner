@@ -51,33 +51,26 @@ function ProgressIndicator({ currentStep }: { currentStep: (typeof steps)[number
 
 export default function OnboardingPlanPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const existing = user ? getStoreOnboardingState(user.id) : null;
+  const existing = getStoreOnboardingState();
 
   const [planType, setPlanType] = useState<"weekly" | "monthly" | "">("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    getCurrentUser().then(setUser);
-  }, []);
-
-  useEffect(() => {
-    if (!user) {
-      const existing = getStoreOnboardingState();
-      if (!existing) {
-        router.push("/onboarding/welcome");
-      }
+    const existing = getStoreOnboardingState();
+    if (!existing) {
+      router.push("/onboarding/welcome");
       return;
     }
-    if (!existing?.childId) {
+    if (!existing.childId) {
       router.push("/onboarding/child");
       return;
     }
     if (existing.planData?.type) {
       setPlanType(existing.planData.type);
     }
-  }, [user, router, existing]);
+  }, [router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -103,7 +96,7 @@ export default function OnboardingPlanPage() {
     }
   }
 
-  if (!user || !existing?.childId) {
+  if (!existing || !existing.childId) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/30">
         <div className="text-muted-foreground">Loading...</div>

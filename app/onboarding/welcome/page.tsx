@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signUp, getCurrentUser } from "@/lib/auth";
 import { getOnboardingState as getStoreOnboardingState, saveOnboardingState as saveStoreOnboardingState, getChildren } from "@/lib/store";
 
 const steps = [
@@ -43,69 +42,105 @@ function ProgressIndicator({ currentStep }: { currentStep: (typeof steps)[number
   );
 }
 
+type BiodataFormData = {
+  parentName: string;
+  email: string;
+  phone: string;
+  location: string;
+  numberOfChildren: string;
+};
+
+const formSteps = [
+  {
+    title: "Your Details",
+    subtitle: "Tell us about yourself so we can personalise the experience.",
+    fields: ["parentName", "email", "phone"] as (keyof BiodataFormData)[],
+  },
+  {
+    title: "Family Background",
+    subtitle: "A little about your household helps us tailor suggestions.",
+    fields: ["location", "numberOfChildren"] as (keyof BiodataFormData)[],
+  },
+] as const;
+
 export default function OnboardingWelcomePage() {
   const router = useRouter();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [form, setForm] = useState<BiodataFormData>({
+    parentName: "",
+    email: "",
+    phone: "",
+    location: "",
+    numberOfChildren: "",
+  });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [created, setCreated] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
-    getCurrentUser().then((u) => {
-      if (u) {
-        const kids = getChildren(u.id);
-        if (kids.length > 0) {
-          router.push("/dashboard");
-        } else {
-          const existing = getStoreOnboardingState(u.id);
-          if (existing && existing.step !== "welcome") {
-            router.push(`/onboarding/${existing.step}`);
-          }
-        }
-      }
-    });
+    const existing = getStoreOnboardingState();
+    if (existing && existing.step !== "welcome") {
+      router.push(`/onboarding/${existing.step}`);
+    }
   }, [router]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  function update(field: keyof BiodataFormData, value: string) {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function validateStep(stepIndex: number): boolean {
+    setError("");
+    if (stepIndex === 0) {
+      if (!form.parentName.trim() || !form.email.trim() || !form.phone.trim()) {
+        setError("Please fill in all fields.");
+        return false;
+      }
+    }
+    if (stepIndex === 1) {
+      if (!form.location.trim() || !form.numberOfChildren.trim()) {
+        setError("Please fill in all fields.");
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function goNext() {
+    if (validateStep(currentStep)) {
+      setCurrentStep((s) => Math.min(s + 1, formSteps.length - 1));
+    }
+  }
+
+  function goBack() {
+    setCurrentStep((s) => Math.max(s - 1, 0));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!name.trim() || !email.trim() || !password) {
-      setError("Please fill in all fields.");
-      return;
-    }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
+    if (!validateStep(1)) return;
     setLoading(true);
     try {
-      const result = await signUp(email, name, password);
-      if (result.user) {
-        const state = {
-          step: "welcome" as const,
-          parentId: result.user.id,
-          startedAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        saveStoreOnboardingState(state);
-        setCreated(true);
-        setTimeout(() => {
-          router.push("/onboarding/child");
-        }, 600);
-      }
+      const state = {
+        step: "welcome" as const,
+        parentId: "local-" + Date.now(),
+        biodata: form,
+        startedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      saveStoreOnboardingState(state);
+      setSaved(true);
+      setTimeout(() => {
+        router.push("/onboarding/child");
+      }, 600);
     } catch (err) {
-      setError((err as Error)?.message || "Failed to create account. Please try again.");
+      setError("We couldn't save that just now. Please try again.");
     } finally {
       setLoading(false);
     }
-  };
+  }
+
+  const currentStepData = formSteps[currentStep];
 
   return (
     <div className="min-h-screen flex flex-col bg-muted/30">
@@ -122,47 +157,93 @@ export default function OnboardingWelcomePage() {
           <div className="text-center mb-8">
             <h1 className="text-3xl md:text-4xl font-bold mb-4">Welcome to Total Child Development Planner</h1>
             <p className="text-lg text-muted-foreground leading-relaxed mb-4">
-              Welcome. Let&apos;s build a practical development journey around your child — one realistic goal, meaningful activity and useful experience at a time.
+              Let&apos;s build a practical development journey around your child — one realistic goal, meaningful activity and useful experience at a time.
             </p>
             <p className="text-muted-foreground mb-8">
               You do not need to plan everything at once. We&apos;ll help you understand your child&apos;s current capabilities, identify priorities and build a realistic path forward.
             </p>
           </div>
 
-          <div className="card">
-            <h2 className="text-xl font-semibold mb-4">Create Your Account</h2>
-            {error && (
-              <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-                {error}
-              </div>
-            )}
-            {created && (
-              <div className="mb-4 rounded-lg border border-growth-200 bg-growth-50 px-4 py-3 text-sm text-growth-800">
-                Account created. Starting onboarding...
-              </div>
-            )}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="label" htmlFor="parentName">Your Full Name</label>
-                <input id="parentName" type="text" className="input" value={name} onChange={(e) => setName(e.target.value)} required />
-              </div>
-              <div>
-                <label className="label" htmlFor="parentEmail">Email Address</label>
-                <input id="parentEmail" type="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} required />
-              </div>
-              <div>
-                <label className="label" htmlFor="parentPassword">Password</label>
-                <input id="parentPassword" type="password" className="input" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
-              </div>
-              <div>
-                <label className="label" htmlFor="confirmPassword">Confirm Password</label>
-                <input id="confirmPassword" type="password" className="input" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={6} />
-              </div>
-              <button type="submit" className="btn-primary w-full" disabled={loading || created}>
-                {loading ? "Creating account..." : created ? "Created" : "Add My Child"}
-              </button>
-            </form>
-          </div>
+          {saved && (
+            <div className="mb-6 rounded-lg border border-growth-200 bg-growth-50 px-4 py-3 text-sm text-growth-800">
+              Biodata saved. Let&apos;s add your child.
+            </div>
+          )}
+
+          {error && (
+            <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="card space-y-6">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-lg font-semibold">{currentStepData.title}</h2>
+              <span className="text-sm text-muted-foreground">Step {currentStep + 1} of {formSteps.length}</span>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">{currentStepData.subtitle}</p>
+
+            {currentStepData.fields.map((field) => {
+              if (field === "parentName") {
+                return (
+                  <div key={field}>
+                    <label className="label" htmlFor="parentName">Your Full Name</label>
+                    <input id="parentName" type="text" className="input" value={form.parentName} onChange={(e) => update("parentName", e.target.value)} required />
+                  </div>
+                );
+              }
+              if (field === "email") {
+                return (
+                  <div key={field}>
+                    <label className="label" htmlFor="email">Email Address</label>
+                    <input id="email" type="email" className="input" value={form.email} onChange={(e) => update("email", e.target.value)} required />
+                  </div>
+                );
+              }
+              if (field === "phone") {
+                return (
+                  <div key={field}>
+                    <label className="label" htmlFor="phone">Phone Number</label>
+                    <input id="phone" type="tel" className="input" value={form.phone} onChange={(e) => update("phone", e.target.value)} required />
+                  </div>
+                );
+              }
+              if (field === "location") {
+                return (
+                  <div key={field}>
+                    <label className="label" htmlFor="location">State / City</label>
+                    <input id="location" type="text" className="input" value={form.location} onChange={(e) => update("location", e.target.value)} required />
+                  </div>
+                );
+              }
+              if (field === "numberOfChildren") {
+                return (
+                  <div key={field}>
+                    <label className="label" htmlFor="numberOfChildren">Number of Children</label>
+                    <input id="numberOfChildren" type="number" min="1" className="input" value={form.numberOfChildren} onChange={(e) => update("numberOfChildren", e.target.value)} required />
+                  </div>
+                );
+              }
+              return null;
+            })}
+
+            <div className="flex flex-col sm:flex-row gap-3 pt-4">
+              {currentStep > 0 && (
+                <button type="button" onClick={goBack} className="btn-outline flex-1">
+                  Back
+                </button>
+              )}
+              {currentStep < formSteps.length - 1 ? (
+                <button type="button" onClick={goNext} className="btn-primary flex-1">
+                  Next
+                </button>
+              ) : (
+                <button type="submit" className="btn-primary flex-1" disabled={loading || saved}>
+                  {loading ? "Saving..." : saved ? "Saved" : "Add My Child"}
+                </button>
+              )}
+            </div>
+          </form>
         </div>
       </main>
     </div>

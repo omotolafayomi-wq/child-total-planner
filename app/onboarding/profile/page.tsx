@@ -79,8 +79,7 @@ const formSteps = [
 
 export default function OnboardingProfilePage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const existing = user ? getStoreOnboardingState(user.id) : null;
+  const existing = getStoreOnboardingState();
 
   const [form, setForm] = useState<ProfileFormData>({
     email: "",
@@ -97,18 +96,14 @@ export default function OnboardingProfilePage() {
   const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
-    getCurrentUser().then(setUser);
-  }, []);
+    const existing = getStoreOnboardingState();
+    if (!existing) {
+      router.push("/onboarding/welcome");
+    }
+  }, [router]);
 
   useEffect(() => {
-    if (!user) {
-      const existing = getStoreOnboardingState();
-      if (!existing) {
-        router.push("/onboarding/welcome");
-      }
-      return;
-    }
-    if (!existing?.childId) {
+    if (!existing || !existing.childId) {
       router.push("/onboarding/child");
       return;
     }
@@ -124,7 +119,7 @@ export default function OnboardingProfilePage() {
         parentPriorities: Array.isArray(data.parentPriorities) ? data.parentPriorities.join(", ") : data.parentPriorities,
       });
     }
-  }, [user, router, existing]);
+  }, [router, existing]);
 
   function update(field: keyof ProfileFormData, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -183,7 +178,7 @@ export default function OnboardingProfilePage() {
     }
   }
 
-  if (!user || !existing?.childId) {
+  if (!existing || !existing.childId) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/30">
         <div className="text-muted-foreground">Loading...</div>

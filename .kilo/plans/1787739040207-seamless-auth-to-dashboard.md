@@ -1,121 +1,176 @@
-# Public Onboarding Flow: Remove Auth Modal, Collect Credentials at Onboarding Start
+# No-Auth Public Onboarding: Biodata Collection + Icon Landing Page
 
 ## Goal
-1. Remove AuthModal completely
-2. Make onboarding fully public — no authentication required to start
-3. Collect parent email/password at `/onboarding/welcome` and create account immediately
-4. New user flow: `/onboarding/welcome` → child → profile → plan → complete → `/dashboard`
-5. Returning users: go directly to `/dashboard`
-6. Pillar icons on landing page → `/dashboard`
+1. Remove all authentication (no sign-in, sign-up, sessions, cookies)
+2. Replace first onboarding step with parent biodata collection form (Next/Back/Submit)
+3. Remove all auth redirects across the app
+4. Pillar Explore buttons → `/activities` after onboarding, `/dashboard` before onboarding
+5. Landing page: welcoming icon-based overview instead of stock photo
 
 ## Design Decisions (Resolved)
-- **Auth timing**: Account created at onboarding start (`/onboarding/welcome` collects email/password)
-- **Public onboarding**: No `getCurrentUser()` checks in onboarding pages
-- **No auth modal**: Landing page CTA goes directly to `/onboarding/welcome`
-- **Returning users**: Landing page detects session; if exists → `/dashboard`
+- **No auth**: No server-side sessions, no cookies, no `/api/auth/signin` or `/api/auth/signup` calls from onboarding
+- **User identification**: LocalStorage-only via onboarding state (`/onboarding/welcome` creates a local parent profile)
+- **Onboarding**: Multi-step biodata form with Next/Back/Submit buttons
+- **Conditional routing**: Check onboarding completion status for Explore buttons
+- **Landing page**: Icon grid explaining the 5 pillars and features, no external image
 
 ## Tasks
 
-### 1. Update `app/onboarding/welcome/page.tsx` — Add account creation
+### 1. Rewrite `app/onboarding/welcome/page.tsx` — Parent biodata form
 
-**Current state**: Checks for user, redirects to `/signin` if not authenticated.
+**Current state**: Collects name, email, password and calls `signUp()`.
 
-**Changes needed**:
-- Remove `getCurrentUser()` auth check
-- Add email and password fields to the welcome step
-- On "Add My Child" button click:
-  1. Validate email and password
-  2. Call `signUp(email, name, password)` to create account
-  3. Save onboarding state with new parentId
-  4. Redirect to `/onboarding/child`
-- If user refreshes page and onboarding state exists with a valid session, continue from current step
-- Store name from form (not just child name)
+**New state**: Collect parent biodata, no auth call.
 
-**New form fields on welcome page**:
-- Parent full name
-- Email address
-- Password (min 6 chars)
-- Keep existing "Add My Child" and "Explore First" buttons
+**Form fields** (multi-step with Next/Back/Submit):
+- Step 1: Parent full name, email, phone number
+- Step 2: Family location (state/city), number of children
+- Submit: saves to localStorage onboarding state, redirects to `/onboarding/child`
 
-### 2. Remove auth guards from all onboarding pages
+**Remove**:
+- `signUp` import and call
+- `getCurrentUser` check
+- Password fields
+- Account creation logic
 
-Update these pages to remove `getCurrentUser()` checks and `/signin` redirects:
-- `app/onboarding/welcome/page.tsx` — handled above
-- `app/onboarding/child/page.tsx` — remove `router.push("/signin")`
-- `app/onboarding/profile/page.tsx` — remove `router.push("/")`
-- `app/onboarding/plan/page.tsx` — remove `router.push("/signin")`
-- `app/onboarding/complete/page.tsx` — remove `router.push("/signin")`
+**Keep**:
+- Progress indicator
+- Redirect to `/onboarding/child` after completion
 
-Each page should:
-- Load onboarding state from localStorage
-- If no onboarding state exists, redirect to `/onboarding/welcome`
-- If onboarding state exists but no session, use the stored parentId for data operations
-- Continue the flow without requiring authentication
+### 2. Update all onboarding pages — Remove auth guards
 
-### 3. Update `components/AppShell.tsx` — Allow public onboarding access
+**Pages to update**:
+- `app/onboarding/welcome/page.tsx` — done above
+- `app/onboarding/child/page.tsx` — remove `getCurrentUser()`, redirect to `/onboarding/welcome` if no state
+- `app/onboarding/profile/page.tsx` — remove `getCurrentUser()`, redirect to `/onboarding/welcome` if no state
+- `app/onboarding/plan/page.tsx` — remove `getCurrentUser()`, redirect to `/onboarding/welcome` if no state
+- `app/onboarding/complete/page.tsx` — remove `getCurrentUser()`, redirect to `/onboarding/welcome` if no state
 
-**Current state**: AppShell redirects unauthenticated users away from `/onboarding` pages.
+**Pattern for each page**:
+```tsx
+// Remove auth check
+// Replace with:
+const onboarding = getStoreOnboardingState();
+if (!onboarding) {
+  router.push("/onboarding/welcome");
+}
+```
 
-**Changes needed**:
-- Keep the auth guard for dashboard pages
-- Allow `/onboarding` pages to render without session
-- The onboarding pages themselves will handle state management
+### 3. Update `app/page.tsx` — Icon-based landing page
 
-### 4. Update `app/page.tsx` — Remove auth modal, simplify CTAs
+**Remove**:
+- Stock photo (`<img>` from Unsplash)
+- Brand text overlay on image
+- Session-dependent conditional rendering
+- Auth modal references
 
-**Changes needed**:
-- Remove `AuthModal` component and all related state (`authModalOpen`, `authModalTab`)
-- Remove `useRouter` import if no longer needed
-- "Start My Child's Development Plan" button → always goes to `/onboarding/welcome`
-- Pillar icon buttons → go to `/dashboard` (requires auth, AppShell will handle redirect)
-- Remove conditional rendering based on `session`
-- Keep the image, brand text, and all other landing page content
+**Add**:
+- Welcoming hero section with icon grid
+- 5 pillar icons with descriptions
+- Feature cards: Assess, Goals, Activities, Evidence, Reports
+- Clear value proposition text
+- "Start My Child's Development Plan" button → `/onboarding/welcome`
+- "I already have an account / Sign In" button → `/dashboard` (for returning users)
 
-### 5. Update redirect targets across the app
+**Layout**:
+```
+Header: Total Child logo/text
+Hero: "Raise a child who can learn, live, lead, earn and serve"
+Subtitle: Brief explanation
+Icon Grid: 5 pillars + key features
+CTA: Start My Child's Development Plan
+Secondary CTA: I have a profile / Sign In
+Footer: Links
+```
 
-Since `/signin`, `/signup`, `/login` are deleted, ensure no remaining references exist:
-- Search for any `router.push("/signin")`, `router.push("/signup")`, `router.push("/login")`
-- Replace with appropriate redirects (`/` or `/onboarding/welcome`)
+### 4. Update pillar Explore buttons — Conditional routing
 
-### 6. Update onboarding state management
+**Current**: All pillar icons → `/dashboard`
 
-The onboarding state currently stores `parentId`. After public onboarding:
-- When account is created at `/onboarding/welcome`, store the new parentId in onboarding state
-- Subsequent onboarding pages use this parentId for `createChild`, `saveOnboardingState`, etc.
-- On completion, the user has a valid session and can access `/dashboard`
+**New logic**:
+```tsx
+const isOnboardingComplete = /* check onboarding state */;
+
+const handlePillarClick = (slug: string) => {
+  if (isOnboardingComplete) {
+    router.push(`/dashboard/activities?pillar=${slug}`);
+  } else {
+    router.push("/dashboard");
+  }
+};
+```
+
+**Update pages**:
+- `app/page.tsx` — landing page pillar icons
+- `app/[pillar]/page.tsx` — if accessed directly, check onboarding state
+
+### 5. Update `components/AppShell.tsx` — Remove auth guards
+
+**Current**: Redirects unauthenticated users to `/signin`.
+
+**Changes**:
+- Remove `getCurrentUser()` check
+- Remove session-dependent redirects
+- Allow all pages to render without auth
+- Dashboard should still work with localStorage data only
+
+**Alternative**: If auth is completely removed, consider removing `AppShell` auth wrapper entirely and let each page handle its own state.
+
+### 6. Remove auth redirects across all pages
+
+Search and update all `router.push("/signin")`, `router.push("/signup")`, `router.push("/login")` to either:
+- `/onboarding/welcome` (if user needs to start onboarding)
+- `/dashboard` (if they should go to dashboard)
+- `/` (landing page)
+
+**Pages to check**:
+- All `app/dashboard/**/page.tsx`
+- All `app/onboarding/**/page.tsx`
+- `app/[pillar]/page.tsx`
+- `app/activities/page.tsx`
+- `app/reports/**`
+
+### 7. Update dashboard pages to work without auth
+
+**Current**: Dashboard pages call `getCurrentUser()` and redirect if null.
+
+**New approach**:
+- Dashboard pages should check for onboarding state in localStorage
+- If onboarding state exists, render dashboard with stored parentId
+- If no onboarding state, redirect to `/onboarding/welcome`
+
+### 8. Clean up auth-related code
+
+- Remove unused imports: `getCurrentUser`, `signIn`, `signUp`, `signOut` from pages that don't need them
+- Consider keeping API routes for future use, but remove client-side calls
+- Update `lib/auth.ts` exports if needed
 
 ## Files to Modify
-- `app/onboarding/welcome/page.tsx` — add account creation form
+- `app/onboarding/welcome/page.tsx` — biodata form, no auth
 - `app/onboarding/child/page.tsx` — remove auth guard
 - `app/onboarding/profile/page.tsx` — remove auth guard
 - `app/onboarding/plan/page.tsx` — remove auth guard
 - `app/onboarding/complete/page.tsx` — remove auth guard
-- `app/page.tsx` — remove AuthModal, simplify CTAs
-- `components/AppShell.tsx` — allow public onboarding
-- Any other pages with old auth redirects
-
-## Files to Delete
-- `components/AuthModal.tsx`
-
-## Dependencies
-- No new dependencies required
+- `app/page.tsx` — icon-based landing page
+- `components/AppShell.tsx` — remove auth guards
+- `app/[pillar]/page.tsx` — conditional routing
+- `app/dashboard/page.tsx` — work without auth
+- All other dashboard pages — remove auth redirects
 
 ## Validation Plan
 1. Run `npm run build` — must pass with no TypeScript errors
-2. Manual test flow:
-   - Visit `/` as unauthenticated user → see landing page with photo, brand text, CTA button
-   - Click "Start My Child's Development Plan" → go to `/onboarding/welcome`
-   - Fill in parent name, email, password → click "Add My Child" → account created → redirect to `/onboarding/child`
-   - Complete child form → `/onboarding/profile`
-   - Complete profile form → `/onboarding/plan`
-   - Complete plan → `/onboarding/complete`
-   - Auto-redirect to `/dashboard` → see dashboard with new child
-   - Sign out → back to landing page
-   - Click pillar icons → redirect to `/dashboard` (requires sign in)
-   - Sign in with created account → go to `/dashboard`
+2. Manual test:
+   - Visit `/` → see icon-based landing page
+   - Click "Start My Child's Development Plan" → `/onboarding/welcome`
+   - Fill biodata form with Next/Back → complete → `/onboarding/child`
+   - Complete full onboarding → `/dashboard`
+   - Click pillar icons before onboarding → `/dashboard`
+   - Click pillar icons after onboarding → `/dashboard/activities?pillar=...`
+   - Refresh during onboarding → state preserved, stays on current step
+   - No auth prompts anywhere
 
 ## Out of Scope
-- Password reset flow improvements
-- Social auth (Google, Apple, etc.)
-- Remembering partially completed onboarding across sessions
-- Email verification
+- Backend auth removal (API routes kept for potential future use)
+- Data migration for existing users
+- Password reset or account recovery
+- Multi-device sync without auth

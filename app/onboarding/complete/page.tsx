@@ -8,38 +8,31 @@ import { getOnboardingState as getStoreOnboardingState, clearOnboardingState } f
 
 export default function OnboardingCompletePage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const existing = user ? getStoreOnboardingState(user.id) : null;
+  const existing = getStoreOnboardingState();
 
   useEffect(() => {
-    getCurrentUser().then(setUser);
-  }, []);
-
-  useEffect(() => {
-    if (!user) {
-      const existing = getStoreOnboardingState();
-      if (!existing) {
-        router.push("/onboarding/welcome");
-      }
+    const existing = getStoreOnboardingState();
+    if (!existing) {
+      router.push("/onboarding/welcome");
       return;
     }
-    if (!existing?.childId) {
+    if (!existing.childId) {
       router.push("/onboarding/child");
       return;
     }
     clearOnboardingState();
-  }, [user, router, existing]);
+  }, [router]);
 
   useEffect(() => {
-    if (user && existing?.childId) {
+    if (existing?.childId) {
       const timer = setTimeout(() => {
         router.push("/dashboard");
       }, 4000);
       return () => clearTimeout(timer);
     }
-  }, [user, existing, router]);
+  }, [existing, router]);
 
-  if (!user || !existing?.childId) {
+  if (!existing?.childId) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/30">
         <div className="text-muted-foreground">Loading...</div>
