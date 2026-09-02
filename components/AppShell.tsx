@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { getCurrentUser, signOut } from "@/lib/auth";
@@ -153,8 +153,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [authChecked, setAuthChecked] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showChildModal, setShowChildModal] = useState(false);
+  const [navCollapsed, setNavCollapsed] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const lastScrollY = useRef(0);
   const pathname = usePathname();
   const router = useRouter();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
+        setNavCollapsed(true);
+      } else {
+        setNavCollapsed(false);
+      }
+      lastScrollY.current = currentScrollY;
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     async function loadSession() {
@@ -242,7 +259,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-border no-print">
+      <header className={`sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-border no-print transition-transform duration-300 ${navCollapsed ? "-translate-y-full" : "translate-y-0"}`}>
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-2">
@@ -330,75 +347,85 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        {mobileMenuOpen && (
-          <>
-            <div className="fixed inset-0 z-[55] bg-black/50 md:hidden" onClick={() => setMobileMenuOpen(false)} />
-            <div className="fixed right-0 top-0 bottom-0 w-72 bg-white shadow-xl z-[60] md:hidden overflow-y-auto overscroll-contain">
-              <div className="flex items-center justify-between p-4 border-b border-border">
-                <span className="font-semibold text-lg">Menu</span>
-                <button
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="p-2 -mr-2 text-muted-foreground hover:text-foreground"
-                  aria-label="Close menu"
-                >
-                  <CloseIcon />
-                </button>
-              </div>
-              <div className="p-4 space-y-1">
-                {childrenList.length > 0 && (
-                  <div className="mb-4">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Children</p>
-                    {childrenList.map((child) => (
-                      <button
-                        key={child.id}
-                        onClick={() => {
-                          setSelectedChildId(child.id);
-                          localStorage.setItem("selectedChildId", child.id);
-                          setMobileMenuOpen(false);
-                        }}
-                        className={`w-full text-left min-h-[44px] flex items-center px-3 rounded-lg text-sm transition-colors ${
-                          selectedChildId === child.id ? "bg-muted font-medium" : "hover:bg-muted"
-                        }`}
-                      >
-                        <div>
-                          <div className="font-medium">{child.name}</div>
-                          <div className="text-xs text-muted-foreground">Age {child.age} • {child.schoolLevel}</div>
-                        </div>
-                      </button>
-                    ))}
+        {selectedChildId && (
+          <div className="hidden md:block bg-white/80 backdrop-blur border-b border-border">
+            <div className="max-w-6xl mx-auto px-4">
+              <nav className="flex items-center gap-1 overflow-x-auto py-2" aria-label="Main navigation">
+                {visibleNav.map((item) => {
+                  const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+                  return (
                     <Link
-                      href="/dashboard/children"
-                      className="block min-h-[44px] flex items-center px-3 text-sm text-accent hover:bg-muted rounded-lg transition-colors mt-1"
-                      onClick={() => setMobileMenuOpen(false)}
+                      key={item.href}
+                      href={item.href}
+                      className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
+                        isActive
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      }`}
+                      aria-label={item.ariaLabel}
                     >
-                      + Add child
+                      <item.icon />
+                      {item.label}
                     </Link>
-                  </div>
-                )}
-                <Link
-                  href="/dashboard"
-                  className="flex items-center gap-3 min-h-[44px] px-3 rounded-lg text-sm font-medium hover:bg-muted transition-colors"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-xs">
-                    {session.name?.[0]?.toUpperCase() || "P"}
-                  </div>
-                  <span className="truncate">{session.name}</span>
-                </Link>
-                <button
-                  onClick={handleSignOut}
-                  className="w-full flex items-center gap-3 min-h-[44px] px-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                >
-                  <SignOutIcon />
-                  Sign out
-                </button>
-              </div>
+                  );
+                })}
+              </nav>
             </div>
-          </>
+          </div>
         )}
       </header>
 
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-6 pb-24 md:pb-6">
+      {selectedChildId && (
+        <div className="md:hidden border-b border-border bg-white/80 backdrop-blur">
+          <button
+            onClick={() => setMobileNavOpen(!mobileNavOpen)}
+            className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium"
+            aria-expanded={mobileNavOpen}
+            aria-label="Toggle navigation"
+          >
+            <span>Menu</span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={`transition-transform ${mobileNavOpen ? "rotate-180" : ""}`}
+            >
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </button>
+          {mobileNavOpen && (
+            <div className="px-4 pb-3 space-y-1">
+              {visibleNav.map((item) => {
+                const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileNavOpen(false)}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                      isActive
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
+                    aria-label={item.ariaLabel}
+                  >
+                    <item.icon />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-6">
         {selectedChildId && childrenList.length > 0 ? (
           children
         ) : (
@@ -438,66 +465,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             }
           }}
         />
-      )}
-
-      {selectedChildId && (
-        <>
-          <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur border-t border-border no-print pb-[env(safe-area-inset-bottom)]" aria-label="Mobile navigation">
-            <div className="flex items-center justify-around px-2 py-1.5">
-              {visibleNav.map((item) => {
-                const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`flex flex-col items-center gap-0.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors min-w-[56px] min-h-[44px] justify-center ${
-                      isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
-                    }`}
-                    aria-label={item.ariaLabel}
-                  >
-                    <item.icon />
-                    <span className="truncate">{item.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          </nav>
-
-          <nav className="hidden md:flex fixed left-0 top-14 bottom-0 w-56 border-r border-border bg-white/80 backdrop-blur z-30 no-print flex-col" aria-label="Desktop navigation">
-            <div className="flex-1 overflow-y-auto py-4 px-3">
-              <div className="space-y-1">
-                {visibleNav.map((item) => {
-                  const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors min-h-[44px] ${
-                        isActive
-                          ? "bg-primary/10 text-primary"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                      }`}
-                      aria-label={item.ariaLabel}
-                    >
-                      <item.icon />
-                      {item.label}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-            <div className="p-3 border-t border-border">
-              <button
-                onClick={handleSignOut}
-                className="w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors min-h-[44px]"
-                aria-label="Sign out"
-              >
-                <SignOutIcon />
-                Sign out
-              </button>
-            </div>
-          </nav>
-        </>
       )}
 
       <footer className="border-t border-border bg-surface-soft no-print">
