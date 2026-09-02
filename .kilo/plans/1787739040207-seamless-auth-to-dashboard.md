@@ -6,6 +6,7 @@
 3. Remove all auth redirects across the app
 4. Pillar Explore buttons → `/activities` after onboarding, `/dashboard` before onboarding
 5. Landing page: welcoming icon-based overview instead of stock photo
+6. Add privacy caveat and required agreement checkbox before onboarding submission
 
 ## Design Decisions (Resolved)
 - **No auth**: No server-side sessions, no cookies, no `/api/auth/signin` or `/api/auth/signup` calls from onboarding
@@ -13,10 +14,60 @@
 - **Onboarding**: Multi-step biodata form with Next/Back/Submit buttons
 - **Conditional routing**: Check onboarding completion status for Explore buttons
 - **Landing page**: Icon grid explaining the 5 pillars and features, no external image
+- **Privacy**: Show privacy caveat and require agreement checkbox before final submission
 
 ## Tasks
 
-### 1. Rewrite `app/onboarding/welcome/page.tsx` — Parent biodata form
+### 1. Update `app/onboarding/welcome/page.tsx` — Privacy caveat and agreement checkbox
+
+**Add to `app/onboarding/welcome/page.tsx`:**
+
+1. Add state after `currentStep`:
+```tsx
+const [agreed, setAgreed] = useState(false);
+```
+
+2. Add check at top of `handleSubmit`:
+```tsx
+if (!agreed) {
+  setError("Please agree to the privacy statement before continuing.");
+  return;
+}
+```
+
+3. Replace final submit button JSX with:
+```tsx
+<div className="rounded-lg border border-border bg-muted/30 p-4">
+  <p className="text-xs text-muted-foreground leading-relaxed">
+    <span className="font-semibold text-foreground">Privacy note:</span>{" "}
+    The information you provide here is stored only in your browser and is used solely for your personal planning experience.
+    It is not shared with third parties, and you remain in control of your data throughout.
+  </p>
+</div>
+<label className="flex items-start gap-3 rounded-lg border border-border bg-white p-4 cursor-pointer">
+  <input
+    type="checkbox"
+    checked={agreed}
+    onChange={(e) => setAgreed(e.target.checked)}
+    className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary"
+  />
+  <span className="text-sm text-muted-foreground">
+    I have read the privacy note and agree that my data will be used only for my personal planning experience.
+  </span>
+</label>
+<button
+  type="submit"
+  className="btn-primary w-full"
+  disabled={loading || saved || !agreed}
+>
+  {loading ? "Saving..." : saved ? "Saved" : "Add My Child"}
+</button>
+{!agreed && (
+  <p className="text-xs text-red-600 mt-2">You must agree to the privacy statement before continuing.</p>
+)}
+```
+
+### 2. Rewrite `app/onboarding/welcome/page.tsx` — Parent biodata form
 
 **Current state**: Collects name, email, password and calls `signUp()`.
 
